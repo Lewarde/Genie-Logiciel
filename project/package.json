@@ -1,0 +1,10 @@
+{
+  "name": "easysave",
+  "version": "1.0.0",
+  "description": "Backup software for ProSoft",
+  "main": "index.js",
+  "scripts": {
+    "build": "dotnet build",
+    "start": "dotnet run"
+  }
+}

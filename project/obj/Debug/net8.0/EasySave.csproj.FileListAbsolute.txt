@@ -1,0 +1,14 @@
+W:\Users\HP\OneDrive\Desktop\project\bin\Debug\net8.0\EasySave.exe
+W:\Users\HP\OneDrive\Desktop\project\bin\Debug\net8.0\EasySave.deps.json
+W:\Users\HP\OneDrive\Desktop\project\bin\Debug\net8.0\EasySave.runtimeconfig.json
+W:\Users\HP\OneDrive\Desktop\project\bin\Debug\net8.0\EasySave.dll
+W:\Users\HP\OneDrive\Desktop\project\bin\Debug\net8.0\EasySave.pdb
+W:\Users\HP\OneDrive\Desktop\project\obj\Debug\net8.0\EasySave.GeneratedMSBuildEditorConfig.editorconfig
+W:\Users\HP\OneDrive\Desktop\project\obj\Debug\net8.0\EasySave.AssemblyInfoInputs.cache
+W:\Users\HP\OneDrive\Desktop\project\obj\Debug\net8.0\EasySave.AssemblyInfo.cs
+W:\Users\HP\OneDrive\Desktop\project\obj\Debug\net8.0\EasySave.csproj.CoreCompileInputs.cache
+W:\Users\HP\OneDrive\Desktop\project\obj\Debug\net8.0\EasySave.dll
+W:\Users\HP\OneDrive\Desktop\project\obj\Debug\net8.0\refint\EasySave.dll
+W:\Users\HP\OneDrive\Desktop\project\obj\Debug\net8.0\EasySave.pdb
+W:\Users\HP\OneDrive\Desktop\project\obj\Debug\net8.0\EasySave.genruntimeconfig.cache
+W:\Users\HP\OneDrive\Desktop\project\obj\Debug\net8.0\ref\EasySave.dll

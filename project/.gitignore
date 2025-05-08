@@ -1,0 +1,13 @@
+﻿# Ignorer les fichiers Visual Studio
+.vs/
+*.user
+*.suo
+
+# Ignorer les dossiers binaires
+bin/
+obj/
+
+# Fichiers temporaires
+CopilotIndices/
+*.vsidx
+*.sqlite

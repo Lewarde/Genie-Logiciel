@@ -1,4 +1,5 @@
 EasySave – Outil de sauvegarde de fichiers (v1.0)
+
 EasySave est une application console développée en .NET Core, conçue pour automatiser la sauvegarde de fichiers et de dossiers, avec gestion de logs, suivi en temps réel, et support multilingue (français / anglais).
 Cette première version respecte un cahier des charges rigoureux, en vue d'une future évolution vers une version graphique (v2.0 - MVVM).
 

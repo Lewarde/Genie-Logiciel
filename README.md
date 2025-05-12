@@ -1,158 +1,88 @@
-EasySave – Outil de sauvegarde de fichiers (v1.0)
+# 💾 EasySave – Livrable 1
 
-EasySave est une application console développée en .NET Core, conçue pour automatiser la sauvegarde de fichiers et de dossiers, avec gestion de logs, suivi en temps réel, et support multilingue (français / anglais).
-Cette première version respecte un cahier des charges rigoureux, en vue d'une future évolution vers une version graphique (v2.0 - MVVM).
+## 🎓 Contexte pédagogique
 
-🛠 Fonctionnalités principales
-Gestion de jusqu’à 5 travaux de sauvegarde.
+Projet réalisé dans le cadre du **module Génie Logiciel**  
+Groupe : **Hamza, Adam, Thomas, Ethan**  
+Encadré par : **DSI de ProSoft**
 
-Chaque travail est défini par :
+---
 
-Un nom
+## 🏢 Présentation de ProSoft et du projet
 
-Un répertoire source
+Nous avons intégré l’équipe de développement de **ProSoft**, éditeur de logiciels professionnels, pour concevoir une première version fonctionnelle d’un logiciel de sauvegarde : **EasySave**.
 
-Un répertoire cible
+Le projet est encadré par le DSI de ProSoft, avec des exigences fortes en termes de **qualité logicielle**, **documentation**, **maintenabilité du code** et **gestion de versions**.  
+EasySave s’inscrit dans la suite logicielle de l’entreprise et doit être **commercialisable**, avec un **prix unitaire de 200 € HT** et un **contrat de maintenance annuel** basé sur l’indice SYNTEC.
 
-Un type de sauvegarde :
+---
 
-Complète
+## 🎯 Objectif du livrable 1
 
-Différentielle
+Ce livrable correspond à la **version 1.0** d’EasySave, développée en **C#** avec **.NET 8**, sous forme d’une **application console**.
 
-Exécution manuelle ou automatique de sauvegardes via ligne de commande :
+Fonctionnalités attendues :
+- Création jusqu’à **5 travaux de sauvegarde**
+- Sauvegardes de type **complète** ou **différentielle**
+- Exécution possible via **ligne de commande**
+- Sauvegarde depuis/vers :
+  - Disques **locaux**
+  - Disques **externes**
+  - Lecteurs **réseaux**
+- Journalisation des actions dans un **fichier log JSON**
+- Suivi en temps réel via un **fichier d’état JSON**
+- Compatibilité avec une future version graphique (MVVM)
 
-1-3 : exécute les sauvegardes 1 à 3 séquentiellement
+---
 
-1;3 : exécute les sauvegardes 1 et 3
+## ⚙️ Contraintes techniques
 
-Support de toutes sources de stockage : disque local, externe ou réseau
+- 🔧 **Langage** : C#  
+- 🏗️ **Framework** : .NET 8.0  
+- 💻 **IDE** : Visual Studio 2022  
+- 📂 **Versioning** : GitHub  
+- 📐 **UML** : lucidshart  
+- 🌐 **Langues** : Interface bilingue (Français / Anglais)
 
-Multilingue : messages disponibles en français 🇫🇷 et en anglais 🇬🇧
+Le code doit respecter les **bonnes pratiques de développement** :
+- Aucune redondance
+- Fonctions de taille raisonnable
+- Commentaires et noms en anglais
+- Architecture claire et maintenable
 
-Suivi d’état en temps réel des sauvegardes (format JSON)
+---
 
-Fichier de log journalier avec toutes les opérations effectuées (format JSON)
+## 📊 Modélisation UML
 
-📁 Format des fichiers générés
-🧾 Fichier log (journalier)
-Chaque action réalisée durant la sauvegarde est enregistrée :
+Quatre diagrammes UML ont été produits pour guider la conception :
+- **Diagramme de cas d’utilisation** : interactions entre l’utilisateur et le système
+- **Diagramme de classes** : structure interne du logiciel
+- **Diagramme d’activités** : parcours logique de l’utilisateur
+- **Diagramme de séquence** : exécution d’un scénario métier
 
-Format : JSON (avec retour à la ligne pour chaque élément)
+Chaque diagramme est expliqué dans la suite du livrable.
 
-Contenu :
+---
 
-Horodatage
+## 📁 Structure du projet
 
-Nom du travail de sauvegarde
+Le projet EasySave est organisé en plusieurs composants :
+- `Program` : point d’entrée
+- `ApplicationManager` : gestion centrale
+- `BackupManager`, `BackupJob` : gestion des sauvegardes
+- `LogManager`, `StateManager` : journalisation et suivi
+- `LanguageManager` : gestion multilingue
 
-Chemin complet source (UNC)
+Les fichiers de log et d’état sont générés au format **JSON** dans des emplacements compatibles avec les serveurs clients (hors `C:\temp\`).
 
-Chemin complet destination (UNC)
+---
 
-Taille du fichier
+## 📘 Remarques
 
-Durée de transfert (ms) — négatif si erreur
+- Un **manuel utilisateur (1 page)** et une **documentation technique** sont prévus.
+- Le système de log est implémenté dans une **DLL réutilisable**.
+- Le projet respecte les consignes de **modularité, maintenabilité et évolutivité** imposées par ProSoft.
+- Une **version 2.0 avec interface graphique** (architecture MVVM) est envisagée si le prototype console donne satisfaction.
 
-📌 Ex : 2025-05-12.json
+---
 
-json
-Copier
-Modifier
-{
-  "Timestamp": "2025-05-12T15:42:10",
-  "JobName": "DailyBackup",
-  "SourceFile": "\\\\PC\\Documents\\report.docx",
-  "TargetFile": "\\\\Backup\\Reports\\report.docx",
-  "FileSize": 1048576,
-  "TransferTimeMs": 345
-}
-📊 Fichier d’état temps réel
-Mis à jour en temps réel, ce fichier stocke l’état actuel de chaque sauvegarde :
-
-Format : JSON
-
-Contenu minimum :
-
-Nom du travail
-
-Horodatage de la dernière action
-
-État (Actif, Terminé, Erreur…)
-
-Nombre total de fichiers
-
-Taille totale
-
-Nombre et taille des fichiers restants
-
-Fichier en cours (source et cible)
-
-📌 Ex : state.json
-
-json
-Copier
-Modifier
-{
-  "JobName": "DailyBackup",
-  "Timestamp": "2025-05-12T15:42:11",
-  "State": "Active",
-  "TotalFilesCount": 10,
-  "TotalFilesSize": 104857600,
-  "RemainingFilesCount": 5,
-  "RemainingFilesSize": 52428800,
-  "CurrentSourceFile": "\\\\PC\\Documents\\image.jpg",
-  "CurrentTargetFile": "\\\\Backup\\Images\\image.jpg"
-}
-⚙️ Architecture du projet
-EasySave.Models : Définitions des modèles (BackupJob, LogEntry…)
-
-EasySave.Services :
-
-IBackupManager / BackupManager : gestion des sauvegardes
-
-IMenuManager / MenuManager : interface utilisateur console
-
-ICommandParser / CommandParser : interprétation des commandes utilisateur
-
-Logger.dll : librairie dédiée à la journalisation, versionnable et réutilisable
-
-EasySave.Utils : gestion multilingue, outils divers
-
-🚀 Utilisation
-Compilation
-bash
-Copier
-Modifier
-dotnet build
-Lancement
-bash
-Copier
-Modifier
-dotnet run
-Exemple en ligne de commande
-bash
-Copier
-Modifier
-dotnet run -- 1-3
-dotnet run -- 1;3
-
-📌 Contraintes spécifiques
-Aucun fichier de log ou d’état ne doit être stocké dans C:\Temp\ : chemins dynamiques et compatibles avec un environnement serveur.
-
-Tous les fichiers de configuration ou état doivent être en JSON avec retour à la ligne par élément.
-
-La librairie Logger.dll doit être maintenable et compatible avec les évolutions du logiciel.
-
-📈 Évolutions futures prévues
-Version 2.0 avec une interface graphique (WPF) suivant le pattern MVVM
-
-Ajout de filtrage de fichiers, planification des sauvegardes, notifications, etc.
-
-🧑‍💻 Auteurs
-Projet réalisé dans le cadre d’un exercice de conception logicielle.
-Adam ADJEROUD
-Hamza HANi
-Thomas HALLIEZ
-Ethan-maris KAMOGNE DOMGUIA
-Développement en .NET Core, C#.

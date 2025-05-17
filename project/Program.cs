@@ -1,61 +1,66 @@
 using System;
 using System.Threading.Tasks;
-using EasySave.Core;
-using EasySave.Utils;
+using EasySave.Core;    // Référence au cœur de l'application (logique principale)
+using EasySave.Utils;   // Référence aux utilitaires (ex : gestion des langues)
 
 namespace EasySave
 {
     class Program
     {
+        // Point d'entrée principal du programme (fonction asynchrone)
         static async Task Main(string[] args)
         {
             try
             {
-                // Initialize localization
-                LocalizationManager.Initialize();
+                // Initialiser la gestion des langues (chargement des traductions disponibles)
+                LanguageManager.Initialize();
 
-                // Ask user for language choice
+                // Demander à l'utilisateur de choisir une langue
                 Console.WriteLine("Choose language / Choisissez la langue :");
                 Console.WriteLine("1. English");
                 Console.WriteLine("2. Français");
                 Console.Write(">> ");
                 string languageChoice = Console.ReadLine();
 
+                // Appliquer la langue choisie par l'utilisateur
                 if (languageChoice == "2")
                 {
-                    LocalizationManager.SetLanguage("fr");
+                    LanguageManager.SetLanguage("fr"); // Choix du français
                 }
                 else
                 {
-                    LocalizationManager.SetLanguage("en");
+                    LanguageManager.SetLanguage("en"); // Par défaut, anglais
                 }
 
-                // Display welcome message
-                Console.WriteLine(LocalizationManager.GetString("WelcomeMessage"));
+                // Afficher un message de bienvenue dans la langue choisie
+                Console.WriteLine(LanguageManager.GetString("WelcomeMessage"));
 
-                // Initialize the application
+                // Initialiser la logique principale de l'application
                 var appManager = new ApplicationManager();
-                await appManager.InitializeAsync();
+                await appManager.InitializeAsync(); // Chargement initial (paramètres, état, etc.)
 
-                // Parse command line arguments if provided
+                // Si des arguments sont fournis en ligne de commande
                 if (args.Length > 0)
                 {
+                    // Traiter les arguments automatiquement (exécution en mode script)
                     await appManager.ProcessCommandLineArgs(args);
                 }
                 else
                 {
-                    // Start interactive menu
+                    // Sinon, démarrer un menu interactif (mode utilisateur)
                     await appManager.StartInteractiveMenuAsync();
                 }
             }
             catch (Exception ex)
             {
+                // En cas d'erreur, afficher un message en rouge
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine(LocalizationManager.GetString("ErrorOccurred") + ex.Message);
-                Console.ResetColor();
+                Console.WriteLine(LanguageManager.GetString("ErrorOccurred") + ex.Message);
+                Console.ResetColor(); // Réinitialiser la couleur d'origine de la console
             }
 
-            Console.WriteLine(LocalizationManager.GetString("PressAnyKeyToExit"));
+            // Fin du programme : attendre que l'utilisateur appuie sur une touche
+            Console.WriteLine(LanguageManager.GetString("PressAnyKeyToExit"));
             Console.ReadKey();
         }
     }

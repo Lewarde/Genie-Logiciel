@@ -1,94 +1,56 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using EasySave.Models;
+using EasySave.Services;
 using EasySave.Utils;
 using Logger;
 
-namespace EasySave.Services
+namespace EasySave.BackupExecutor
 {
-    public class BackupManager
+    public class BackupExecutor : IBackupExecutor
     {
-        private readonly List<BackupJob> _backupJobs;
-        private readonly StateManager _stateManager;
         private readonly LogManager _logManager;
+        private readonly StateManager _stateManager;
 
-        public BackupManager()
+        public BackupExecutor(LogManager logManager, StateManager stateManager)
         {
-            _backupJobs = new List<BackupJob>();
-            _stateManager = new StateManager();
-            _logManager = new LogManager();
-        }
-
-        public List<BackupJob> GetAllJobs() => _backupJobs;
-
-        public void AddBackupJob(BackupJob job) => _backupJobs.Add(job);
-
-        public void RemoveBackupJob(int index)
-        {
-            if (index >= 0 && index < _backupJobs.Count)
-                _backupJobs.RemoveAt(index);
+            _logManager = logManager;
+            _stateManager = stateManager;
         }
 
         public async Task ExecuteBackupJobAsync(BackupJob job)
         {
-            Console.WriteLine(LanguageManager.GetString("ExecutingJob") + job.Name);
+            DirectoryInfo sourceDir = new DirectoryInfo(job.SourceDirectory);
+            FileInfo[] files = sourceDir.GetFiles("*", SearchOption.AllDirectories);
 
-            try
+            var progress = new BackupProgress
             {
-                if (!Directory.Exists(job.SourceDirectory))
-                {
-                    Console.WriteLine(LanguageManager.GetString("SourceDirNotFound"));
-                    return;
-                }
+                JobName = job.Name,
+                Timestamp = DateTime.Now,
+                State = BackupState.Active,
+                TotalFilesCount = files.Length,
+                TotalFilesSize = files.Sum(f => f.Length),
+                RemainingFilesCount = files.Length,
+                RemainingFilesSize = files.Sum(f => f.Length),
+            };
 
-                if (!Directory.Exists(job.TargetDirectory))
-                    Directory.CreateDirectory(job.TargetDirectory);
+            if (job.Type == BackupType.Full)
+                await PerformFullBackupAsync(job, progress, files, sourceDir);
+            else
+                await PerformDifferentialBackupAsync(job, progress, files, sourceDir);
 
-                var progress = new BackupProgress
-                {
-                    JobName = job.Name,
-                    State = BackupState.Active,
-                    Timestamp = DateTime.Now
-                };
-
-                var sourceDir = new DirectoryInfo(job.SourceDirectory);
-                var files = sourceDir.GetFiles("*", SearchOption.AllDirectories);
-
-                await _stateManager.UpdateStateAsync(progress);
-
-                if (job.Type == BackupType.Full)
-                    await PerformFullBackupAsync(job, progress, files, sourceDir);
-                else
-                    await PerformDifferentialBackupAsync(job, progress, files, sourceDir);
-
-                progress.State = BackupState.Completed;
-                progress.RemainingFilesCount = 0;
-                progress.RemainingFilesSize = 0;
-                await _stateManager.UpdateStateAsync(progress);
-
-                Console.WriteLine(LanguageManager.GetString("BackupCompleted"));
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(LanguageManager.GetString("BackupError") + ex.Message);
-
-                var errorProgress = new BackupProgress
-                {
-                    JobName = job.Name,
-                    State = BackupState.Error,
-                    Timestamp = DateTime.Now
-                };
-
-                await _stateManager.UpdateStateAsync(errorProgress);
-            }
+            progress.State = BackupState.Inactive;
+            await _stateManager.UpdateStateAsync(progress);
         }
 
         private async Task PerformFullBackupAsync(BackupJob job, BackupProgress progress, FileInfo[] files, DirectoryInfo sourceDir)
         {
             int processedCount = 0;
+            Console.WriteLine($"[DEBUG] Nombre de fichiers trouvés : {files.Length}");
 
             foreach (var file in files)
             {
@@ -232,4 +194,5 @@ namespace EasySave.Services
             Console.WriteLine();
         }
     }
+
 }

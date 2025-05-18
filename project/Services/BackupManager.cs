@@ -19,7 +19,7 @@ namespace EasySave.Services
         {
             _backupJobs = new List<BackupJob>();
             _stateManager = new StateManager();
-            _logManager = new LogManager();
+            _logManager = LogManager.Instance;
         }
 
         public List<BackupJob> GetAllJobs() => _backupJobs;

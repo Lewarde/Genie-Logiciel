@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Text.Json;
 using System.Threading.Tasks;
 using EasySave.Models;
 
@@ -8,44 +7,51 @@ namespace Logger
 {
     public class LogManager
     {
+        private static LogManager _instance;
+        private static readonly object _initLock = new();
+
         private readonly string _logDirectory;
         private readonly object _lockObject = new();
+        private readonly ILogWriter _logWriter;
 
-        public LogManager()
+        private LogManager(string format)
         {
-            _logDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "EasySave", "Logs");
+            _logDirectory = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "EasySave", "Logs");
+
             if (!Directory.Exists(_logDirectory))
                 Directory.CreateDirectory(_logDirectory);
+
+            _logWriter = format == "XML"
+                ? new XmlLogWriter(_logDirectory)
+                : new JsonLogWriter(_logDirectory);
+        }
+
+        public static void Initialize(string format)
+        {
+            lock (_initLock)
+            {
+                if (_instance == null)
+                {
+                    _instance = new LogManager(format);
+                }
+            }
+        }
+
+        public static LogManager Instance
+        {
+            get
+            {
+                if (_instance == null)
+                    throw new InvalidOperationException("LogManager not initialized. Call Initialize() first.");
+                return _instance;
+            }
         }
 
         public async Task LogFileOperationAsync(LogEntry logEntry)
         {
-            try
-            {
-                string logFileName = DateTime.Now.ToString("yyyy-MM-dd") + ".json";
-                string logFilePath = Path.Combine(_logDirectory, logFileName);
-
-                var logLine = new
-                {
-                    Name = logEntry.JobName,
-                    FileSource = logEntry.SourceFile,
-                    FileTarget = logEntry.TargetFile,
-                    FileSize = logEntry.FileSize,
-                    FileTransferTime = Math.Round((double)logEntry.TransferTimeMs / 1000, 3),
-                    time = DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss")
-                };
-
-                string jsonLine = JsonSerializer.Serialize(logLine);
-
-                lock (_lockObject)
-                {
-                    File.AppendAllText(logFilePath, jsonLine + ",\n");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error writing to log file: {ex.Message}");
-            }
+            await Task.Run(() => _logWriter.WriteLog(logEntry));
         }
     }
 }

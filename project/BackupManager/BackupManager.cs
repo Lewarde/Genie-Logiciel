@@ -21,10 +21,10 @@ namespace EasySave.BackupManager
         {
             _backupJobs = new List<BackupJob>();
             _stateManager = new StateManager();
-            _logManager = new LogManager();
+            _logManager = LogManager.Instance; // 🔥 correction ici
             _backupExecutor = new BackupExecutor.BackupExecutor(_logManager, _stateManager);
-
         }
+
 
         public List<BackupJob> GetAllJobs() => _backupJobs;
 

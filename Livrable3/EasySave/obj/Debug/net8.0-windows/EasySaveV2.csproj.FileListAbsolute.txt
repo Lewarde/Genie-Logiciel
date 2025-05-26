@@ -1,0 +1,97 @@
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2\bin\Debug\net8.0-windows\EasySaveV2.exe
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2\bin\Debug\net8.0-windows\EasySaveV2.dll.config
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2\bin\Debug\net8.0-windows\EasySaveV2.deps.json
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2\bin\Debug\net8.0-windows\EasySaveV2.runtimeconfig.json
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2\bin\Debug\net8.0-windows\EasySaveV2.dll
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2\bin\Debug\net8.0-windows\EasySaveV2.pdb
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2\bin\Debug\net8.0-windows\Microsoft.Bcl.AsyncInterfaces.dll
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2\bin\Debug\net8.0-windows\System.IO.Pipelines.dll
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2\bin\Debug\net8.0-windows\System.Text.Encodings.Web.dll
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2\bin\Debug\net8.0-windows\System.Text.Json.dll
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2\bin\Debug\net8.0-windows\runtimes\browser\lib\net8.0\System.Text.Encodings.Web.dll
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.csproj.AssemblyReference.cache
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2\obj\Debug\net8.0-windows\views\EditBackupJobWindow.baml
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2\obj\Debug\net8.0-windows\views\MainWindow.baml
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2\obj\Debug\net8.0-windows\App.baml
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2\obj\Debug\net8.0-windows\views\EditBackupJobWindow.g.cs
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2\obj\Debug\net8.0-windows\views\MainWindow.g.cs
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2\obj\Debug\net8.0-windows\App.g.cs
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2_MarkupCompile.cache
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.g.resources
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.Properties.Resources.resources
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.csproj.GenerateResource.cache
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.AssemblyInfoInputs.cache
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.AssemblyInfo.cs
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.csproj.CoreCompileInputs.cache
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.sourcelink.json
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.csproj.Up2Date
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.dll
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2\obj\Debug\net8.0-windows\refint\EasySaveV2.dll
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.pdb
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.genruntimeconfig.cache
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2\obj\Debug\net8.0-windows\ref\EasySaveV2.dll
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable2\EasySaveV2\bin\Debug\net8.0-windows\EasySaveV2.exe
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable2\EasySaveV2\bin\Debug\net8.0-windows\EasySaveV2.dll.config
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable2\EasySaveV2\bin\Debug\net8.0-windows\EasySaveV2.deps.json
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable2\EasySaveV2\bin\Debug\net8.0-windows\EasySaveV2.runtimeconfig.json
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable2\EasySaveV2\bin\Debug\net8.0-windows\EasySaveV2.dll
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable2\EasySaveV2\bin\Debug\net8.0-windows\EasySaveV2.pdb
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable2\EasySaveV2\bin\Debug\net8.0-windows\Microsoft.Bcl.AsyncInterfaces.dll
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable2\EasySaveV2\bin\Debug\net8.0-windows\System.IO.Pipelines.dll
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable2\EasySaveV2\bin\Debug\net8.0-windows\System.Text.Encodings.Web.dll
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable2\EasySaveV2\bin\Debug\net8.0-windows\System.Text.Json.dll
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable2\EasySaveV2\bin\Debug\net8.0-windows\runtimes\browser\lib\net8.0\System.Text.Encodings.Web.dll
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable2\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.csproj.AssemblyReference.cache
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable2\EasySaveV2\obj\Debug\net8.0-windows\views\EditBackupJobWindow.baml
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable2\EasySaveV2\obj\Debug\net8.0-windows\views\MainWindow.baml
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable2\EasySaveV2\obj\Debug\net8.0-windows\App.baml
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable2\EasySaveV2\obj\Debug\net8.0-windows\views\EditBackupJobWindow.g.cs
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable2\EasySaveV2\obj\Debug\net8.0-windows\views\MainWindow.g.cs
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable2\EasySaveV2\obj\Debug\net8.0-windows\App.g.cs
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable2\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2_MarkupCompile.cache
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable2\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.g.resources
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable2\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.Properties.Resources.resources
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable2\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.csproj.GenerateResource.cache
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable2\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable2\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.AssemblyInfoInputs.cache
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable2\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.AssemblyInfo.cs
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable2\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.csproj.CoreCompileInputs.cache
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable2\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.csproj.Up2Date
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable2\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.dll
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable2\EasySaveV2\obj\Debug\net8.0-windows\refint\EasySaveV2.dll
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable2\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.pdb
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable2\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.genruntimeconfig.cache
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable2\EasySaveV2\obj\Debug\net8.0-windows\ref\EasySaveV2.dll
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable3\EasySaveV2\bin\Debug\net8.0-windows\EasySaveV2.exe
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable3\EasySaveV2\bin\Debug\net8.0-windows\EasySaveV2.dll.config
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable3\EasySaveV2\bin\Debug\net8.0-windows\EasySaveV2.deps.json
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable3\EasySaveV2\bin\Debug\net8.0-windows\EasySaveV2.runtimeconfig.json
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable3\EasySaveV2\bin\Debug\net8.0-windows\EasySaveV2.dll
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable3\EasySaveV2\bin\Debug\net8.0-windows\EasySaveV2.pdb
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable3\EasySaveV2\bin\Debug\net8.0-windows\Microsoft.Bcl.AsyncInterfaces.dll
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable3\EasySaveV2\bin\Debug\net8.0-windows\System.IO.Pipelines.dll
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable3\EasySaveV2\bin\Debug\net8.0-windows\System.Text.Encodings.Web.dll
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable3\EasySaveV2\bin\Debug\net8.0-windows\System.Text.Json.dll
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable3\EasySaveV2\bin\Debug\net8.0-windows\runtimes\browser\lib\net8.0\System.Text.Encodings.Web.dll
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable3\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.csproj.AssemblyReference.cache
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable3\EasySaveV2\obj\Debug\net8.0-windows\views\EditBackupJobWindow.baml
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable3\EasySaveV2\obj\Debug\net8.0-windows\views\MainWindow.baml
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable3\EasySaveV2\obj\Debug\net8.0-windows\App.baml
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable3\EasySaveV2\obj\Debug\net8.0-windows\views\EditBackupJobWindow.g.cs
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable3\EasySaveV2\obj\Debug\net8.0-windows\views\MainWindow.g.cs
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable3\EasySaveV2\obj\Debug\net8.0-windows\App.g.cs
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable3\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2_MarkupCompile.cache
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable3\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.g.resources
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable3\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.Properties.Resources.resources
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable3\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.csproj.GenerateResource.cache
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable3\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable3\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.AssemblyInfoInputs.cache
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable3\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.AssemblyInfo.cs
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable3\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.csproj.CoreCompileInputs.cache
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable3\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.csproj.Up2Date
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable3\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.dll
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable3\EasySaveV2\obj\Debug\net8.0-windows\refint\EasySaveV2.dll
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable3\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.pdb
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable3\EasySaveV2\obj\Debug\net8.0-windows\EasySaveV2.genruntimeconfig.cache
+C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable3\EasySaveV2\obj\Debug\net8.0-windows\ref\EasySaveV2.dll

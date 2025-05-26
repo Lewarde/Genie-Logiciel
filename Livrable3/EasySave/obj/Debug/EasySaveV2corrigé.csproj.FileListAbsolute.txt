@@ -1,0 +1,11 @@
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2corrigé\obj\Debug\EasySaveV2corrigé.csproj.AssemblyReference.cache
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2corrigé\obj\Debug\MainWindow.baml
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2corrigé\obj\Debug\EditBackupJobWindow.baml
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2corrigé\obj\Debug\MainWindow.g.cs
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2corrigé\obj\Debug\EditBackupJobWindow.g.cs
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2corrigé\obj\Debug\App.g.cs
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2corrigé\obj\Debug\EasySaveV2corrigé_MarkupCompile.cache
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2corrigé\obj\Debug\EasySaveV2corrigé.g.resources
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2corrigé\obj\Debug\EasySaveV2corrigé.Properties.Resources.resources
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2corrigé\obj\Debug\EasySaveV2corrigé.csproj.GenerateResource.cache
+C:\Users\Adam\source\repos\Genie-Logiciel\EasySaveV2corrigé\obj\Debug\EasySaveV2corrigé.csproj.CoreCompileInputs.cache

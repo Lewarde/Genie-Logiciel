@@ -1,0 +1,87 @@
+﻿<Window x:Class="EasySave.Wpf.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        FontFamily="Segoe UI" FontSize="12"
+        Background="WhiteSmoke"
+        WindowStartupLocation="CenterScreen"
+        Width="730" Height="430" MinWidth="730" MinHeight="430">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock x:Name="labelJobsHeader" Grid.Row="0" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="3*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <ListBox x:Name="listBoxBackupJobs" Grid.Column="0" Margin="0,0,10,0"
+                     ItemsSource="{Binding BackupJobs}"
+                     DisplayMemberPath="DisplayMember" 
+                     SelectedItem="{Binding SelectedBackupJob, Mode=TwoWay}"
+                     SelectionChanged="listBoxBackupJobs_SelectionChanged"/>
+
+            <StackPanel Grid.Column="1" VerticalAlignment="Top">
+                <Button x:Name="buttonAddJob" Height="35" Margin="0,0,0,10" Click="buttonAddJob_Click" 
+                        Background="LightSteelBlue" IsEnabled="{Binding AreControlsEnabled}"/>
+                <Button x:Name="buttonEditJob" Height="35" Margin="0,0,0,10" Click="buttonEditJob_Click" 
+                        Background="LightSteelBlue" IsEnabled="{Binding AreControlsEnabled}"/>
+                <Button x:Name="buttonDeleteJob" Height="35" Margin="0,0,0,10" Click="buttonDeleteJob_Click" 
+                        Background="IndianRed" Foreground="White" IsEnabled="{Binding AreControlsEnabled}"/>
+            </StackPanel>
+        </Grid>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,10,0,10">
+            <Button x:Name="buttonExecuteSelected" Content="Execute Selected" Height="35" Width="150" Margin="0,0,10,0" 
+                    Click="buttonExecuteSelected_Click" Background="MediumSeaGreen" Foreground="White" 
+                    IsEnabled="{Binding AreControlsEnabled}"/>
+            <Button x:Name="buttonExecuteAll" Content="Execute All" Height="35" Width="150" 
+                    Click="buttonExecuteAll_Click" Background="MediumSeaGreen" Foreground="White" 
+                    IsEnabled="{Binding AreControlsEnabled}"/>
+        </StackPanel>
+
+        <WrapPanel Grid.Row="3" Orientation="Horizontal" Margin="0,10,0,10" VerticalAlignment="Center">
+            <TextBlock x:Name="labelLanguage" VerticalAlignment="Center" Margin="0,0,5,0" Text="Language:"/>
+            <ComboBox x:Name="comboBoxLanguage" Width="100" Margin="0,0,15,0" VerticalAlignment="Center"
+                      ItemsSource="{Binding AvailableLanguages}"
+                      SelectedItem="{Binding CurrentLanguage, Mode=TwoWay}"
+                      IsEnabled="{Binding AreControlsEnabled}"/>
+
+            <TextBlock x:Name="labelLogFormat" VerticalAlignment="Center" Margin="0,0,5,0" Text="Log Format:"/>
+            <ComboBox x:Name="comboBoxLogFormat" Width="100" Margin="0,0,15,0" VerticalAlignment="Center"
+                      ItemsSource="{Binding AvailableLogFormats}"
+                      SelectedItem="{Binding CurrentLogFormat, Mode=TwoWay}"
+                      IsEnabled="{Binding AreControlsEnabled}"/>
+
+            <TextBlock x:Name="labelBusinessSoftware" VerticalAlignment="Center" Margin="0,0,5,0" Text="Business Software Path:"/>
+            <TextBox x:Name="textBoxBusinessSoftware" Width="150" VerticalAlignment="Center"
+                     Text="{Binding BusinessSoftwareNameSetting, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="Enter full path to executable (e.g., C:\Windows\System32\calc.exe)"
+                     IsEnabled="{Binding AreControlsEnabled}" Margin="0,0,15,0"/>
+        </WrapPanel>
+
+
+        <StatusBar Grid.Row="4" VerticalAlignment="Bottom" Margin="0,5,0,0">
+            <StatusBarItem>
+                <TextBlock Text="{Binding StatusMessage}" />
+            </StatusBarItem>
+            <StatusBarItem HorizontalAlignment="Right">
+                <ProgressBar Value="{Binding CurrentProgressPercentage}" Width="100" Height="18" 
+                             Visibility="{Binding IsExecutingBackup, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+            </StatusBarItem>
+        </StatusBar>
+    </Grid>
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    </Window.Resources>
+</Window>

@@ -1,0 +1,75 @@
+﻿<Window x:Class="EasySave.Wpf.Views.EditBackupJobWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        FontFamily="Segoe UI" FontSize="12"
+        Background="WhiteSmoke"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize"
+        SizeToContent="WidthAndHeight"
+        MinHeight="250" MinWidth="570" MaxWidth="570">
+    <!-- Augmenté MinHeight pour la nouvelle ligne -->
+    <Grid Margin="15">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <!-- Name -->
+            <RowDefinition Height="Auto"/>
+            <!-- Source Directory -->
+            <RowDefinition Height="Auto"/>
+            <!-- Target Directory -->
+            <RowDefinition Height="Auto"/>
+            <!-- Backup Type -->
+            <RowDefinition Height="Auto"/>
+            <!-- Encryption File Type -->
+            <RowDefinition Height="Auto"/>
+            <!-- Buttons -->
+        </Grid.RowDefinitions>
+
+        <!-- Name -->
+        <TextBlock x:Name="labelName" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Margin="0,5,10,5"/>
+        <TextBox x:Name="textBoxName" Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" Margin="0,5,0,5"
+                 Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+
+        <!-- Source Directory -->
+        <TextBlock x:Name="labelSource" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Margin="0,5,10,5"/>
+        <TextBox x:Name="textBoxSourceDir" Grid.Row="1" Grid.Column="1" VerticalAlignment="Center" Margin="0,5,0,5"
+                 Text="{Binding SourceDirectory, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+        <Button x:Name="buttonBrowseSource" Grid.Row="1" Grid.Column="2" Content="..." Width="30" Height="25" VerticalAlignment="Center" Margin="5,5,0,5"
+                Click="buttonBrowseSource_Click"/>
+
+        <!-- Target Directory -->
+        <TextBlock x:Name="labelTarget" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Margin="0,5,10,5"/>
+        <TextBox x:Name="textBoxTargetDir" Grid.Row="2" Grid.Column="1" VerticalAlignment="Center" Margin="0,5,0,5"
+                 Text="{Binding TargetDirectory, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+        <Button x:Name="buttonBrowseTarget" Grid.Row="2" Grid.Column="2" Content="..." Width="30" Height="25" VerticalAlignment="Center" Margin="5,5,0,5"
+                Click="buttonBrowseTarget_Click"/>
+
+        <!-- Backup Type -->
+        <TextBlock x:Name="labelType" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Margin="0,5,10,5"/>
+        <ComboBox x:Name="comboBoxBackupType" Grid.Row="3" Grid.Column="1" VerticalAlignment="Center" Margin="0,5,0,5"
+                  SelectionChanged="comboBoxBackupType_SelectionChanged" Width="150" HorizontalAlignment="Left"/>
+
+        <!-- Encryption File Type -->
+        <TextBlock x:Name="labelFileType" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Margin="0,5,10,5" />
+        <ComboBox x:Name="comboBoxTypeFile" Grid.Row="3" Grid.Column="1" VerticalAlignment="Center" Margin="193,0,0,0"
+                  SelectionChanged="comboBoxTypeFile_SelectionChanged" Width="150" HorizontalAlignment="Left"/>
+        <!-- CORRIGÉ : SelectionChanged pointe vers la bonne méthode -->
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+            <!-- CORRIGÉ : Grid.Row="5" -->
+            <Button x:Name="buttonOK" Width="95" Height="30" Margin="0,0,10,0" Click="buttonOK_Click" IsDefault="True"
+                    Background="MediumSeaGreen" Foreground="White"/>
+            <Button x:Name="buttonCancel" Width="95" Height="30" Click="buttonCancel_Click" IsCancel="True"
+                    Background="IndianRed" Foreground="White"/>
+        </StackPanel>
+    </Grid>
+</Window>

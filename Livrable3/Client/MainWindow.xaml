@@ -1,0 +1,51 @@
+﻿<Window x:Class="Client.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Client"
+        mc:Ignorable="d"
+        Title="Client EasySave Progress" Height="450" Width="800"
+        Closing="MainWindow_Closing">
+	<!-- Gestion de la fermeture -->
+	<Grid Margin="10">
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="*"/>
+		</Grid.RowDefinitions>
+
+		<StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+			<Button x:Name="ConnectButton" Content="Se connecter" Width="100" Click="ConnectButton_Click" Margin="0,0,10,0"/>
+			<Button x:Name="DisconnectButton" Content="Se déconnecter" Width="100" Click="DisconnectButton_Click" IsEnabled="False"/>
+			<TextBlock x:Name="StatusTextBlock" VerticalAlignment="Center" Margin="10,0,0,0" Text="Déconnecté"/>
+		</StackPanel>
+
+		<TextBlock Grid.Row="1" Text="Progression des travaux :" FontSize="16" FontWeight="Bold" Margin="0,0,0,5"/>
+
+		<!-- Pour afficher les données JSON brutes (simple) -->
+		<!-- <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+            <TextBlock x:Name="ProgressDataRawTextBlock" TextWrapping="Wrap" FontFamily="Consolas"/>
+        </ScrollViewer> -->
+
+		<!-- Pour afficher les travaux de manière structurée (mieux) -->
+		<ListView x:Name="JobProgressListView" Grid.Row="2">
+			<ListView.View>
+				<GridView>
+					<GridViewColumn Header="Nom" Width="150" DisplayMemberBinding="{Binding Name}"/>
+					<GridViewColumn Header="État" Width="100" DisplayMemberBinding="{Binding State}"/>
+					<GridViewColumn Header="Progression" Width="100">
+						<GridViewColumn.CellTemplate>
+							<DataTemplate>
+								<ProgressBar Value="{Binding Progression}" Minimum="0" Maximum="100" Height="15" Width="80"/>
+							</DataTemplate>
+						</GridViewColumn.CellTemplate>
+					</GridViewColumn>
+					<GridViewColumn Header="%" Width="50" DisplayMemberBinding="{Binding Progression, StringFormat={}{0}%}"/>
+					<GridViewColumn Header="Fichier Actuel" Width="250" DisplayMemberBinding="{Binding CurrentSourceFile}"/>
+				</GridView>
+			</ListView.View>
+		</ListView>
+
+	</Grid>
+</Window>

@@ -7,8 +7,8 @@ namespace EasySave.Services.CryptoSoft
     public class EncryptionService
     {
         // Le chemin vers CryptoSoft.exe doit être configurable ou relatif
-        private readonly string _encryptionToolPath = @"C:\Users\ajese\OneDrive - Association Cesi Viacesi mail\Documents\Génie Logiciel\Livrable3\CryptoSoft\bin\Debug\net9.0-windows\CryptoSoft.exe"; // Utilisez @ pour les chemins
-
+        private readonly string _encryptionToolPath = @"C:\Users\hp\Desktop\genie logiciel\EasySave_3emeVersion\Livrable3\CryptoSoft\bin\Debug\net9.0-windows\CryptoSoft.exe"; // Utilisez @ pour les chemins
+e
         public long EncryptFile(string sourceFilePath, string targetDirectoryPath)
         {
             if (!File.Exists(_encryptionToolPath))

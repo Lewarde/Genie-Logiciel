@@ -9,7 +9,7 @@
         Background="WhiteSmoke"
         WindowStartupLocation="CenterScreen"
         Title="EasySave – Gestionnaire de Sauvegardes"
-        Width="800" Height="550" MinWidth="800" MinHeight="500">
+        Width="900" Height="650" MinWidth="900" MinHeight="600">
 
 
     <Grid Margin="10">
@@ -23,7 +23,9 @@
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0" Orientation="Vertical" HorizontalAlignment="Left" Margin="0,0,0,10">
-            <Image Source="//Image/images.png" Width="179" Height="85" Margin="0,0,0,10"/>
+            <Image Source="C:\Users\Adam\Source\Repos\Genie-Logiciel\Livrable3\EasySave\Image\images.png"
+       Width="179" Height="85" Margin="0,0,0,10"/>
+
             <TextBlock x:Name="labelJobsHeader" Text="Tâches de Sauvegarde" FontSize="16" FontWeight="Bold" Margin="0,5,0,0" HorizontalAlignment="Left"/>
         </StackPanel>
 

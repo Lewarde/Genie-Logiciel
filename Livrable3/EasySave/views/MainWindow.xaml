@@ -3,11 +3,15 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:viewModels="clr-namespace:EasySave.ViewModels"
         mc:Ignorable="d"
         FontFamily="Segoe UI" FontSize="12"
         Background="WhiteSmoke"
         WindowStartupLocation="CenterScreen"
-        Width="730" Height="430" MinWidth="730" MinHeight="430">
+        Title="EasySave – Gestionnaire de Sauvegardes"
+        Width="800" Height="550" MinWidth="800" MinHeight="500">
+
+
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -15,72 +19,95 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock x:Name="labelJobsHeader" Grid.Row="0" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+        <StackPanel Grid.Row="0" Orientation="Vertical" HorizontalAlignment="Left" Margin="0,0,0,10">
+            <Image Source="//Image/images.png" Width="179" Height="85" Margin="0,0,0,10"/>
+            <TextBlock x:Name="labelJobsHeader" Text="Tâches de Sauvegarde" FontSize="16" FontWeight="Bold" Margin="0,5,0,0" HorizontalAlignment="Left"/>
+        </StackPanel>
+
 
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="3*"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-
             <ListBox x:Name="listBoxBackupJobs" Grid.Column="0" Margin="0,0,10,0"
                      ItemsSource="{Binding BackupJobs}"
                      DisplayMemberPath="DisplayMember" 
                      SelectedItem="{Binding SelectedBackupJob, Mode=TwoWay}"
                      SelectionChanged="listBoxBackupJobs_SelectionChanged"/>
-
             <StackPanel Grid.Column="1" VerticalAlignment="Top">
-                <Button x:Name="buttonAddJob" Height="35" Margin="0,0,0,10" Click="buttonAddJob_Click" 
-                        Background="LightSteelBlue" IsEnabled="{Binding AreControlsEnabled}"/>
-                <Button x:Name="buttonEditJob" Height="35" Margin="0,0,0,10" Click="buttonEditJob_Click" 
-                        Background="LightSteelBlue" IsEnabled="{Binding AreControlsEnabled}"/>
-                <Button x:Name="buttonDeleteJob" Height="35" Margin="0,0,0,10" Click="buttonDeleteJob_Click" 
-                        Background="IndianRed" Foreground="White" IsEnabled="{Binding AreControlsEnabled}"/>
+                <Button x:Name="buttonAddJob" Height="35" Margin="0,0,0,10" Click="buttonAddJob_Click" Background="LightSteelBlue" IsEnabled="{Binding AreGlobalControlsEnabled}" Content="Créer une Tâche"/>
+                <Button x:Name="buttonEditJob" Height="35" Margin="0,0,0,10" Click="buttonEditJob_Click" Background="LightSteelBlue" IsEnabled="{Binding AreGlobalControlsEnabled}" Content="Modifier la Tâche"/>
+                <Button x:Name="buttonDeleteJob" Height="35" Margin="0,0,0,10" Click="buttonDeleteJob_Click" Background="IndianRed" Foreground="White" IsEnabled="{Binding AreGlobalControlsEnabled}" Content="Supprimer la Tâche"/>
             </StackPanel>
         </Grid>
 
         <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,10,0,10">
-            <Button x:Name="buttonExecuteSelected" Content="Execute Selected" Height="35" Width="150" Margin="0,0,10,0" 
-                    Click="buttonExecuteSelected_Click" Background="MediumSeaGreen" Foreground="White" 
-                    IsEnabled="{Binding AreControlsEnabled}"/>
-            <Button x:Name="buttonExecuteAll" Content="Execute All" Height="35" Width="150" 
-                    Click="buttonExecuteAll_Click" Background="MediumSeaGreen" Foreground="White" 
-                    IsEnabled="{Binding AreControlsEnabled}"/>
+            <Button x:Name="buttonExecuteSelected" Content="Exécuter la Tâche Sélectionnée" Height="35" Width="200" Margin="0,0,10,0" Click="buttonExecuteSelected_Click" Background="MediumSeaGreen" Foreground="White" IsEnabled="{Binding AreGlobalControlsEnabled}"/>
+            <Button x:Name="buttonExecuteAll" Content="Exécuter Toutes les Tâches (Seq)" Height="35" Width="200" Margin="0,0,10,0" Click="buttonExecuteAll_Click" Background="MediumSeaGreen" Foreground="White" IsEnabled="{Binding AreGlobalControlsEnabled}"/>
+            <Button Content="Lancer toutes les sauvegardes (Parallèle)" Height="35" Width="220" Margin="10,0,0,0" Command="{Binding StartAllCommand}" Background="DodgerBlue" Foreground="White" IsEnabled="{Binding AreGlobalControlsEnabled}"/>
         </StackPanel>
 
         <WrapPanel Grid.Row="3" Orientation="Horizontal" Margin="0,10,0,10" VerticalAlignment="Center">
-            <TextBlock x:Name="labelLanguage" VerticalAlignment="Center" Margin="0,0,5,0" Text="Language:"/>
-            <ComboBox x:Name="comboBoxLanguage" Width="100" Margin="0,0,15,0" VerticalAlignment="Center"
-                      ItemsSource="{Binding AvailableLanguages}"
-                      SelectedItem="{Binding CurrentLanguage, Mode=TwoWay}"
-                      IsEnabled="{Binding AreControlsEnabled}"/>
-
-            <TextBlock x:Name="labelLogFormat" VerticalAlignment="Center" Margin="0,0,5,0" Text="Log Format:"/>
-            <ComboBox x:Name="comboBoxLogFormat" Width="100" Margin="0,0,15,0" VerticalAlignment="Center"
-                      ItemsSource="{Binding AvailableLogFormats}"
-                      SelectedItem="{Binding CurrentLogFormat, Mode=TwoWay}"
-                      IsEnabled="{Binding AreControlsEnabled}"/>
-
-            <TextBlock x:Name="labelBusinessSoftware" VerticalAlignment="Center" Margin="0,0,5,0" Text="Business Software Path:"/>
-            <TextBox x:Name="textBoxBusinessSoftware" Width="150" VerticalAlignment="Center"
-                     Text="{Binding BusinessSoftwareNameSetting, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                     ToolTip="Enter full path to executable (e.g., C:\Windows\System32\calc.exe)"
-                     IsEnabled="{Binding AreControlsEnabled}" Margin="0,0,15,0"/>
+            <TextBlock x:Name="labelLanguage" VerticalAlignment="Center" Margin="0,0,5,0" Text="Langue :"/>
+            <ComboBox Width="100" Margin="0,0,15,0" VerticalAlignment="Center" ItemsSource="{Binding AvailableLanguages}" SelectedItem="{Binding CurrentLanguage, Mode=TwoWay}" IsEnabled="{Binding AreGlobalControlsEnabled}"/>
+            <TextBlock x:Name="labelLogFormat" VerticalAlignment="Center" Margin="0,0,5,0" Text="Format des Logs :"/>
+            <ComboBox Width="100" Margin="0,0,15,0" VerticalAlignment="Center" ItemsSource="{Binding AvailableLogFormats}" SelectedItem="{Binding CurrentLogFormat, Mode=TwoWay}" IsEnabled="{Binding AreGlobalControlsEnabled}"/>
+            <TextBlock x:Name="labelBusinessSoftware" VerticalAlignment="Center" Margin="0,0,5,0" Text="BusinessSoftware:"/>
+            <TextBox Width="150" VerticalAlignment="Center" Text="{Binding BusinessSoftwareNameSetting, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="Enter full path to executable (e.g., C:\Windows\System32\calc.exe)" IsEnabled="{Binding AreGlobalControlsEnabled}" Margin="0,0,15,0"/>
         </WrapPanel>
 
-
-        <StatusBar Grid.Row="4" VerticalAlignment="Bottom" Margin="0,5,0,0">
+        <StatusBar Grid.Row="4" VerticalAlignment="Bottom" Margin="0,5,0,5">
             <StatusBarItem>
-                <TextBlock Text="{Binding StatusMessage}" />
-            </StatusBarItem>
-            <StatusBarItem HorizontalAlignment="Right">
-                <ProgressBar Value="{Binding CurrentProgressPercentage}" Width="100" Height="18" 
-                             Visibility="{Binding IsExecutingBackup, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                <TextBlock Text="{Binding GlobalStatusMessage}" />
             </StatusBarItem>
         </StatusBar>
+
+        <ItemsControl Grid.Row="5" ItemsSource="{Binding BackupJobs}" Margin="0,5,0,0">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="{x:Type viewModels:BackupJobViewModel}">
+                    <Border BorderBrush="LightGray" BorderThickness="0,0,0,1" Padding="0,5">
+                        <Grid Margin="0,2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <!-- Name -->
+                                <ColumnDefinition Width="*"/>
+                                <!-- Progress Bar -->
+                                <ColumnDefinition Width="Auto"/>
+                                <!-- Percentage Text -->
+                                <ColumnDefinition Width="Auto"/>
+                                <!-- Status Text -->
+                                <ColumnDefinition Width="Auto"/>
+                                <!-- Action Buttons -->
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Column="0" Text="{Binding Name}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,0" MinWidth="120"/>
+                            <ProgressBar Grid.Column="1" Value="{Binding CurrentProgressPercentage}" Height="18" VerticalAlignment="Center" Minimum="0" Maximum="100" 
+                                         Visibility="{Binding IsExecuting, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            <TextBlock Grid.Column="2" Text="{Binding CurrentProgressPercentage, StringFormat={}{0}%}" VerticalAlignment="Center" Margin="5,0,10,0" 
+                                       Visibility="{Binding IsExecuting, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            <TextBlock Grid.Column="3" Text="{Binding StatusMessage}" VerticalAlignment="Center" Margin="5,0,15,0" FontStyle="Italic" Foreground="Gray" MinWidth="150"/>
+
+                            <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button Content="⏸" Command="{Binding PauseCommand}" ToolTip="Pause" Width="30" Margin="2" IsEnabled="{Binding CanPause}"/>
+                                <Button Content="▶" Command="{Binding ResumeCommand}" ToolTip="Resume" Width="30" Margin="2" IsEnabled="{Binding CanResume}"/>
+                                <Button Content="⏹" Command="{Binding StopCommand}" ToolTip="Stop" Background="IndianRed" Foreground="White" Width="30" Margin="2" IsEnabled="{Binding CanStop}"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Vertical"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+        </ItemsControl>
     </Grid>
+
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
     </Window.Resources>

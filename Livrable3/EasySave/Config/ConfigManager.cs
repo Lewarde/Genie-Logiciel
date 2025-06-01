@@ -71,15 +71,15 @@ namespace EasySave.Config
                 {
                     string json = await File.ReadAllTextAsync(AppSettingsFilePath);
                     var settings = JsonSerializer.Deserialize<AppSettingsData>(json);
-                    return settings ?? new AppSettingsData(); 
+                    return settings ?? new AppSettingsData();
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Error loading application settings: {ex.Message}");
-                    return new AppSettingsData(); 
+                    return new AppSettingsData();
                 }
             }
-            return new AppSettingsData(); 
+            return new AppSettingsData();
         }
 
         public static async Task SaveAppSettingsAsync(AppSettingsData settings)

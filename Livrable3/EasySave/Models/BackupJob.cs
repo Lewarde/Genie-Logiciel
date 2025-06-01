@@ -8,21 +8,24 @@ namespace EasySave.Models
         public string SourceDirectory { get; set; }
         public string TargetDirectory { get; set; }
 
-        public EncryptionFileExtension FileExtension { get; set; } 
+        public EncryptionFileExtension FileExtension { get; set; }
+        public PriorityFileExtension Priority { get; set; } 
+
 
         public BackupJob()
         {
             Name = string.Empty;
             SourceDirectory = string.Empty;
             TargetDirectory = string.Empty;
-            FileExtension = EncryptionFileExtension.Null; // Valeur par défaut
+            FileExtension = EncryptionFileExtension.Null;
+            Priority = PriorityFileExtension.Null;
         }
     }
 
 
     public enum EncryptionFileExtension
     {
-        Null, 
+        Null,
         Txt,
         Docx,
         Xlsx,
@@ -33,6 +36,21 @@ namespace EasySave.Models
         Avi,
         Mkv,
         Mov
-        
+
+    }
+
+    public enum PriorityFileExtension
+    {
+        Null,
+        Txt,
+        Docx,
+        Xlsx,
+        Jpg,
+        Png,
+        Mp4,
+        Mp3,
+        Avi,
+        Mkv,
+        Mov
     }
 }

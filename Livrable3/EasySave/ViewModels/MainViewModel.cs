@@ -1,4 +1,3 @@
-// MainViewModel.cs
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -6,29 +5,35 @@ using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Input;
 using EasySave.Config;
 using EasySave.Models;
-using EasySave.Utils; // For LanguageManager and ProcessUtils
+using EasySave.Utils;
 using Logger;
-using EasySave.BackupManager;
-using EasySave.BackupExecutor; // For ProgressUpdated event args
 using EasySave.Wpf.Views;
-using System.IO; // For Path validation in CheckAndLogBusinessSoftwareAsync (optional)
+using EasySave.Commands;
+using System.IO;
+using System.Diagnostics;
+using System.Net.Sockets;
+using EasySave.Services;
 
 namespace EasySave.ViewModels
 {
     public class MainViewModel : BaseViewModel
     {
-        private EasySave.BackupManager.BackupManager _backupManagerService;
+        private SocketService _socketService;
+        private EasySave.BackupManager.BackupManager _backupManagerService; // Use the correct BackupManager
         private ObservableCollection<BackupJobViewModel> _backupJobs;
         private BackupJobViewModel _selectedBackupJob;
         private AppSettingsData _appSettings;
 
+        private static Socket clientSocket;
         private string _currentLanguage;
         private string _currentLogFormat;
-        private string _statusMessage;
-        private int _currentProgressPercentage;
-        private bool _isExecutingBackup;
+        private bool _isExecutingAnyJob; // Renamed for clarity
+        private string _globalStatusMessage;
+
+        public ICommand StartAllCommand { get; }
 
         public ObservableCollection<BackupJobViewModel> BackupJobs
         {
@@ -56,13 +61,17 @@ namespace EasySave.ViewModels
                     if (_appSettings != null)
                     {
                         _appSettings.Language = value;
-#pragma warning disable CS4014
                         ConfigManager.SaveAppSettingsAsync(_appSettings);
-#pragma warning restore CS4014
                     }
-                    OnPropertyChanged(nameof(AddButtonText));
+                    // OnPropertyChanged(nameof(AddButtonText)); // Assuming AddButtonText is localized
+                    LocalizeDynamicUIText();
                 }
             }
+        }
+
+        private void LocalizeDynamicUIText()
+        {
+
         }
 
         public string CurrentLogFormat
@@ -72,21 +81,19 @@ namespace EasySave.ViewModels
             {
                 if (SetProperty(ref _currentLogFormat, value))
                 {
-                    LogManager.Initialize(value);
+                    LogManager.Initialize(value); // Re-initialize LogManager with new format
                     if (_appSettings != null)
                     {
                         _appSettings.LogFormat = value;
-#pragma warning disable CS4014
                         ConfigManager.SaveAppSettingsAsync(_appSettings);
-#pragma warning restore CS4014
                     }
                 }
             }
         }
 
-        public string BusinessSoftwareNameSetting // Renamed to BusinessSoftwarePathSetting for clarity
+        public string BusinessSoftwareNameSetting
         {
-            get => _appSettings?.BusinessSoftwareProcessName ?? string.Empty; // Property in AppSettingsData is still BusinessSoftwareProcessName
+            get => _appSettings?.BusinessSoftwareProcessName ?? string.Empty;
             set
             {
                 if (_appSettings != null)
@@ -94,377 +101,548 @@ namespace EasySave.ViewModels
                     if (EqualityComparer<string>.Default.Equals(_appSettings.BusinessSoftwareProcessName, value))
                         return;
 
-                    _appSettings.BusinessSoftwareProcessName = value; // Storing the path here
+                    _appSettings.BusinessSoftwareProcessName = value;
                     OnPropertyChanged(nameof(BusinessSoftwareNameSetting));
-
-#pragma warning disable CS4014
                     ConfigManager.SaveAppSettingsAsync(_appSettings);
-#pragma warning restore CS4014
                 }
             }
         }
 
-
-        public string StatusMessage
+        public string GlobalStatusMessage
         {
-            get => _statusMessage;
-            set => SetProperty(ref _statusMessage, value);
+            get => _globalStatusMessage;
+            set => SetProperty(ref _globalStatusMessage, value);
         }
 
-        public int CurrentProgressPercentage
+        public bool IsExecutingAnyJob // True if any job is in a state considered "executing" (Active, Paused)
         {
-            get => _currentProgressPercentage;
-            set => SetProperty(ref _currentProgressPercentage, value);
-        }
-
-        public bool IsExecutingBackup
-        {
-            get => _isExecutingBackup;
-            set
+            get => _isExecutingAnyJob;
+            private set // Setter should be private, updated internally
             {
-                if (SetProperty(ref _isExecutingBackup, value))
+                if (SetProperty(ref _isExecutingAnyJob, value))
                 {
-                    OnPropertyChanged(nameof(AreControlsEnabled));
+                    OnPropertyChanged(nameof(AreGlobalControlsEnabled));
+                    // This will affect StartAllCommand's CanExecute
+                    ((RelayCommand)StartAllCommand).RaiseCanExecuteChanged();
+                    // And other global command buttons like Add, Edit, Delete job, Execute Selected/All (sequential)
+                    // These might need their own RelayCommands or a shared CanExecute logic.
                 }
             }
         }
 
-        public bool AreControlsEnabled => !_isExecutingBackup;
+        // Controls like Add, Edit, Delete, Execute All (Sequential), Language, Log Format, Business Software
+        public bool AreGlobalControlsEnabled => !IsExecutingAnyJob;
 
-        public string AddButtonText => LanguageManager.GetString("CreateBackupJob");
+
+        // public string AddButtonText => LanguageManager.GetString("CreateBackupJob"); // Example for localized button text
 
         public MainViewModel()
         {
             BackupJobs = new ObservableCollection<BackupJobViewModel>();
+            StartAllCommand = new RelayCommand(async () => await StartAllBackupsInParallelAsync(), () => AreGlobalControlsEnabled && _backupManagerService != null);
+            _socketService = new SocketService(8080); // Utiliser le port de votre choix
+            try
+            {
+                _socketService.Start();
+            }
+            catch (Exception ex)
+            {
+                // Gérer l'échec du démarrage du serveur (par exemple, port déjà utilisé)
+                GlobalStatusMessage = $"Error starting communication server: {ex.Message}";
+                MessageBox.Show(GlobalStatusMessage, "Server Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void HandleUninitializedService(string operationAttemptKey)
+        {
+            string operationAttempt = LanguageManager.GetString(operationAttemptKey);
+            string message = $"{operationAttempt}: {LanguageManager.GetString("ServiceNotInitialized")}";
+            GlobalStatusMessage = message;
+            MessageBox.Show(message, LanguageManager.GetString("ServiceErrorTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
         public async Task InitializeAsync()
         {
-            LanguageManager.Initialize();
-            _appSettings = await ConfigManager.LoadAppSettingsAsync();
-            if (_appSettings == null) _appSettings = new AppSettingsData();
-
-            LanguageManager.SetLanguage(_appSettings.Language);
-            _currentLanguage = _appSettings.Language;
-            OnPropertyChanged(nameof(CurrentLanguage));
-
-            LogManager.Initialize(_appSettings.LogFormat);
-            _currentLogFormat = _appSettings.LogFormat;
-            OnPropertyChanged(nameof(CurrentLogFormat));
-            OnPropertyChanged(nameof(BusinessSoftwareNameSetting));
-
-            _backupManagerService = new EasySave.BackupManager.BackupManager(_appSettings);
-            if (_backupManagerService.GetBackupExecutor() != null)
+            try
             {
-                _backupManagerService.GetBackupExecutor().ProgressUpdated += OnBackupProgressUpdated;
-            }
+                LanguageManager.Initialize(); // Initialize translations first
+                _appSettings = await ConfigManager.LoadAppSettingsAsync();
+                if (_appSettings == null) _appSettings = new AppSettingsData();
 
-            var jobModelsFromConfig = await ConfigManager.LoadJobsAsync();
-            BackupJobs.Clear();
-            foreach (var jobModel in jobModelsFromConfig)
-            {
-                _backupManagerService.AddBackupJob(jobModel);
-                BackupJobs.Add(new BackupJobViewModel(jobModel));
+                CurrentLanguage = _appSettings.Language; // Set language, triggers PropertyChanged and LanguageManager.SetLanguage
+
+                string logFormat = string.IsNullOrEmpty(_appSettings.LogFormat) ? "JSON" : _appSettings.LogFormat;
+                // CurrentLogFormat setter will initialize LogManager
+                CurrentLogFormat = logFormat; // Set log format, triggers PropertyChanged and LogManager.Initialize
+
+                OnPropertyChanged(nameof(BusinessSoftwareNameSetting)); // Notify UI of initial BS name
+
+                _backupManagerService = new EasySave.BackupManager.BackupManager(_appSettings);
+                if (_backupManagerService.GetBackupExecutor() != null)
+                {
+                    _backupManagerService.GetBackupExecutor().ProgressUpdated += OnBackupProgressUpdated;
+                }
+
+                var jobModelsFromConfig = await ConfigManager.LoadJobsAsync();
+                BackupJobs.Clear();
+                foreach (var jobModel in jobModelsFromConfig)
+                {
+                    _backupManagerService.AddBackupJob(jobModel); // Add to service's internal list
+                    var jobVm = new BackupJobViewModel(jobModel, _backupManagerService); // Pass service for commands
+                    jobVm.ResetState(); // Set initial UI state
+                    BackupJobs.Add(jobVm);
+                }
+                GlobalStatusMessage = LanguageManager.GetString("WelcomeMessage");
             }
-            StatusMessage = LanguageManager.GetString("WelcomeMessage");
+            catch (Exception ex)
+            {
+                GlobalStatusMessage = $"{LanguageManager.GetString("InitializationError")}: {ex.Message}";
+                MessageBox.Show(GlobalStatusMessage, LanguageManager.GetString("Error"), MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                UpdateOverallExecutionState(); // Initial check
+            }
         }
 
-        private void OnBackupProgressUpdated(BackupProgress progress)
+        private async void OnBackupProgressUpdated(BackupProgress progress)
         {
-            if (System.Windows.Application.Current != null && !System.Windows.Application.Current.Dispatcher.CheckAccess())
+            // Ensure UI updates happen on the UI thread
+            if (Application.Current?.Dispatcher.CheckAccess() == false)
             {
-                System.Windows.Application.Current.Dispatcher.Invoke(() => UpdateProgressUI(progress));
+                Application.Current.Dispatcher.Invoke(() => UpdateJobAndOverallState(progress));
             }
-            else if (System.Windows.Application.Current != null)
+            else
             {
-                UpdateProgressUI(progress);
+                UpdateJobAndOverallState(progress);
+            }
+
+            var allJobsCurrentState = BackupJobs.Select(vm => new
+            {
+                Name = vm.Name,
+                State = vm.IsPaused ? "PAUSED" : (vm.IsExecuting ? "ACTIVE" : vm.StatusMessage.ToUpperInvariant()),
+                TotalFilesToCopy = vm.JobModel.Name == progress.JobName ? progress.TotalFilesCount : GetTotalFilesForJob(vm.Name),
+                TotalFilesSize = vm.JobModel.Name == progress.JobName ? progress.TotalFilesSize : GetTotalSizeForJob(vm.Name),
+                NbFilesLeftToDo = vm.JobModel.Name == progress.JobName ? progress.RemainingFilesCount : GetRemainingFilesForJob(vm.Name),
+                Progression = vm.CurrentProgressPercentage,
+                CurrentSourceFile = vm.JobModel.Name == progress.JobName ? progress.CurrentSourceFile : "",
+                CurrentTargetFile = vm.JobModel.Name == progress.JobName ? progress.CurrentTargetFile : ""
+            }).ToList();
+
+            if (_socketService != null)
+            {
+                await _socketService.SendProgressToClientsAsync(allJobsCurrentState);
             }
         }
 
-        private void UpdateProgressUI(BackupProgress progress)
+
+        private int GetTotalFilesForJob(string jobName)
         {
-            if (progress.State == BackupState.Interrupted)
-            {
-                StatusMessage = $"{LanguageManager.GetString("JobInterrupted")} {progress.JobName}: {LanguageManager.GetString("BusinessSoftwareDetected")}";
-            }
-            else if (progress.State == BackupState.Error)
-            {
-                StatusMessage = $"{progress.JobName}: {LanguageManager.GetString("BackupError")}";
-            }
-            else if (progress.State == BackupState.Completed)
-            {
-                StatusMessage = $"{progress.JobName}: {LanguageManager.GetString("BackupCompleted")}";
-            }
-            else if (progress.State == BackupState.Active)
-            {
-                StatusMessage = $"{LanguageManager.GetString("ExecutingJob")} {progress.JobName}: {progress.Progress}% - {progress.CurrentSourceFile ?? "Initializing..."}";
-            }
-            else if (progress.State == BackupState.Inactive && IsExecutingBackup)
-            {
-                StatusMessage = $"{progress.JobName}: {LanguageManager.GetString("BackupCompleted")}";
-            }
-            CurrentProgressPercentage = progress.Progress;
+
+            var jobVm = BackupJobs.FirstOrDefault(j => j.Name == jobName);
+
+            return 0;
         }
+        private long GetTotalSizeForJob(string jobName)
+        {
+            return 0; 
+        }
+        private int GetRemainingFilesForJob(string jobName)
+        {
+            var jobVm = BackupJobs.FirstOrDefault(j => j.Name == jobName);
+
+            return 0;
+        }
+
+        private void UpdateJobAndOverallState(BackupProgress progress)
+        {
+            var jobVm = BackupJobs.FirstOrDefault(j => j.JobModel.Name == progress.JobName);
+            if (jobVm != null)
+            {
+                jobVm.UpdateProgress(progress);
+            }
+            else
+            {
+                Debug.WriteLine($"[MainViewModel] Progress update for unknown job: {progress.JobName}");
+            }
+            UpdateOverallExecutionState();
+        }
+
+        private void UpdateOverallExecutionState()
+        {
+            // Any job is active or paused
+            IsExecutingAnyJob = BackupJobs.Any(j => j.IsExecuting);
+
+            // Update global status message based on overall state
+            if (!IsExecutingAnyJob)
+            {
+                // Check if any job ended in error or was stopped to set an appropriate final message
+                if (BackupJobs.Any(j => j.StatusMessage == LanguageManager.GetString("StatusError") || j.StatusMessage == LanguageManager.GetString("StatusInterrupted")))
+                {
+                    GlobalStatusMessage = LanguageManager.GetString("AllJobsCompletedWithIssues");
+                }
+
+            }
+
+        }
+
 
         private async Task<bool> CheckAndLogBusinessSoftwareAsync(string jobName)
         {
-            // The BusinessSoftwareProcessName in _appSettings now holds the full path
             string businessSoftwarePath = _appSettings?.BusinessSoftwareProcessName;
-
-            if (string.IsNullOrWhiteSpace(businessSoftwarePath))
-            {
-                return false; // No business software path configured
-            }
-
+            if (string.IsNullOrWhiteSpace(businessSoftwarePath)) return false;
 
             if (ProcessUtils.IsProcessRunning(businessSoftwarePath))
             {
-                // Extract file name for a slightly friendlier message, or use the full path.
                 string softwareDisplayName = Path.GetFileName(businessSoftwarePath);
                 string message = string.Format(LanguageManager.GetString("BusinessSoftwarePreventingJob"), jobName, softwareDisplayName);
-                StatusMessage = message;
-                System.Windows.MessageBox.Show(message, LanguageManager.GetString("OperationAborted"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                GlobalStatusMessage = message; // Show in status bar
+                MessageBox.Show(message, LanguageManager.GetString("OperationAborted"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 await LogManager.Instance.LogFileOperationAsync(new LogEntry
                 {
                     Timestamp = DateTime.Now,
                     JobName = jobName,
-                    Message = $"{message} (Path: {businessSoftwarePath})" // Log with path for clarity
+                    Message = $"{message} (Path: {businessSoftwarePath})" // Log with path for details
                 });
+                // Update specific job VM state to Interrupted
+                var jobVm = BackupJobs.FirstOrDefault(j => j.Name == jobName);
+                jobVm?.UpdateProgress(new BackupProgress { JobName = jobName, State = BackupState.Interrupted });
+                UpdateOverallExecutionState();
                 return true;
             }
             return false;
         }
 
-
         public async Task AddBackupJobAsync(Window owner)
         {
+            if (_backupManagerService == null) { HandleUninitializedService("AddJobOperation"); return; }
+            if (!AreGlobalControlsEnabled) return; // Prevent action if something is running
+
             var newJobModel = new BackupJob();
-            var newJobVm = new BackupJobViewModel(newJobModel);
+            var newJobVm = new BackupJobViewModel(newJobModel, _backupManagerService); // Pass service
+            newJobVm.ResetState();
+            var editWindow = new EditBackupJobWindow(newJobVm) { Owner = owner };
 
-            var editWindow = new EditBackupJobWindow(newJobVm)
+            if (editWindow.ShowDialog() == true)
             {
-                Owner = owner
-            };
-
-            bool? dialogResult = editWindow.ShowDialog();
-
-            if (dialogResult == true)
-            {
-                _backupManagerService.AddBackupJob(newJobModel);
-                BackupJobs.Add(newJobVm);
+                _backupManagerService.AddBackupJob(newJobModel); // Add to service's list
+                BackupJobs.Add(newJobVm); // Add to UI list
                 await SaveJobsConfigurationAsync();
-                StatusMessage = LanguageManager.GetString("JobCreatedSuccessfully");
+                GlobalStatusMessage = LanguageManager.GetString("JobCreatedSuccessfully");
             }
         }
 
         public async Task EditBackupJobAsync(Window owner)
         {
+            if (_backupManagerService == null) { HandleUninitializedService("EditJobOperation"); return; }
             if (SelectedBackupJob == null)
             {
-                System.Windows.MessageBox.Show(
-                    LanguageManager.GetString("InvalidJobIndex"),
-                    "Error",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                MessageBox.Show(LanguageManager.GetString("InvalidJobIndex"), LanguageManager.GetString("Error"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
+            if (!AreGlobalControlsEnabled) return;
 
+            // Clone the model for editing, so changes are only applied on OK.
             var originalJobModel = SelectedBackupJob.JobModel;
             var jobModelCloneForEditing = new BackupJob
             {
-                Name = originalJobModel.Name,
+                Name = originalJobModel.Name, // Name might be editable or not, depending on requirements
                 SourceDirectory = originalJobModel.SourceDirectory,
                 TargetDirectory = originalJobModel.TargetDirectory,
-                FileExtension = originalJobModel.FileExtension
+                FileExtension = originalJobModel.FileExtension,
+                Priority = originalJobModel.Priority
             };
-            var tempViewModelForEditing = new BackupJobViewModel(jobModelCloneForEditing);
+            // Use a temporary ViewModel for the dialog, passing the cloned model and service
+            var tempViewModelForEditing = new BackupJobViewModel(jobModelCloneForEditing, _backupManagerService);
+            var editWindow = new EditBackupJobWindow(tempViewModelForEditing) { Owner = owner };
 
-
-            var editWindow = new EditBackupJobWindow(tempViewModelForEditing)
+            if (editWindow.ShowDialog() == true)
             {
-                Owner = owner
-            };
-            bool? dialogResult = editWindow.ShowDialog();
-
-            if (dialogResult == true)
-            {
-                originalJobModel.Name = tempViewModelForEditing.Name;
+                // Apply changes from the clone back to the original model
+                originalJobModel.Name = tempViewModelForEditing.Name; // Update Name in model
                 originalJobModel.SourceDirectory = tempViewModelForEditing.SourceDirectory;
                 originalJobModel.TargetDirectory = tempViewModelForEditing.TargetDirectory;
                 originalJobModel.FileExtension = tempViewModelForEditing.FileExtension;
+                originalJobModel.Priority = tempViewModelForEditing.Priority;
 
+                // Update the existing ViewModel in the list to reflect model changes
                 SelectedBackupJob.UpdateModel(originalJobModel);
-
                 await SaveJobsConfigurationAsync();
-                StatusMessage = LanguageManager.GetString("JobModifiedSuccessfully");
+                GlobalStatusMessage = LanguageManager.GetString("JobModifiedSuccessfully");
             }
         }
 
         public async Task DeleteBackupJobAsync()
         {
+            if (_backupManagerService == null) { HandleUninitializedService("DeleteJobOperation"); return; }
             if (SelectedBackupJob == null)
             {
-                System.Windows.MessageBox.Show(
-                    LanguageManager.GetString("InvalidJobIndex"),
-                    "Error",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                MessageBox.Show(LanguageManager.GetString("InvalidJobIndex"), LanguageManager.GetString("Error"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
+            if (!AreGlobalControlsEnabled) return;
 
-            var result = System.Windows.MessageBox.Show(
+            var result = MessageBox.Show(
                 string.Format(LanguageManager.GetString("ConfirmDeleteJob"), SelectedBackupJob.Name),
-                LanguageManager.GetString("Confirmation"),
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning);
+                LanguageManager.GetString("Confirmation"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
 
             if (result == MessageBoxResult.Yes)
             {
-                _backupManagerService.RemoveBackupJob(SelectedBackupJob.JobModel);
-                BackupJobs.Remove(SelectedBackupJob);
-                SelectedBackupJob = null;
+                _backupManagerService.RemoveBackupJob(SelectedBackupJob.JobModel); // Remove from service
+                BackupJobs.Remove(SelectedBackupJob); // Remove from UI
+                SelectedBackupJob = null; // Clear selection
                 await SaveJobsConfigurationAsync();
-                StatusMessage = LanguageManager.GetString("JobDeletedSuccessfully");
+                GlobalStatusMessage = LanguageManager.GetString("JobDeletedSuccessfully");
             }
         }
 
         public async Task ExecuteSelectedJobAsync()
         {
+            if (_backupManagerService == null) { HandleUninitializedService("ExecuteSingleJobOperation"); return; }
             if (SelectedBackupJob == null)
             {
-                System.Windows.MessageBox.Show(LanguageManager.GetString("InvalidJobIndex"), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(LanguageManager.GetString("InvalidJobIndex"), LanguageManager.GetString("Error"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-
-            if (await CheckAndLogBusinessSoftwareAsync(SelectedBackupJob.Name))
+            if (SelectedBackupJob.IsExecuting) // Already running (active or paused)
             {
+                MessageBox.Show(LanguageManager.GetString("JobAlreadyRunning"), LanguageManager.GetString("Info"), MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
-            IsExecutingBackup = true;
-            CurrentProgressPercentage = 0;
+            if (await CheckAndLogBusinessSoftwareAsync(SelectedBackupJob.Name)) return; // BS check
+
+            SelectedBackupJob.ResetState(); // Prepare VM for execution
+            // IsExecutingAnyJob will be true once BackupExecutor updates state to Active via ProgressUpdated
+            UpdateOverallExecutionState();
+
+
             try
             {
-                StatusMessage = $"{LanguageManager.GetString("ExecutingJob")} {SelectedBackupJob.Name}...";
+                GlobalStatusMessage = $"{LanguageManager.GetString("ExecutingJob")} {SelectedBackupJob.Name}...";
                 await _backupManagerService.ExecuteBackupJobAsync(SelectedBackupJob.JobModel);
+                // Final state (Completed, Error, Stopped) is set by BackupExecutor via ProgressUpdated
             }
-            catch (BusinessSoftwareInterruptionException bsie)
+            catch (BusinessSoftwareInterruptionException bsie) // Already handled by CheckAndLog or by BackupExecutor
             {
-                StatusMessage = $"{LanguageManager.GetString("JobInterrupted")} {SelectedBackupJob.Name}: {bsie.Message}";
-                System.Windows.MessageBox.Show(StatusMessage, LanguageManager.GetString("OperationAborted"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                GlobalStatusMessage = string.Format(LanguageManager.GetString("JobInterruptedWithMessage"), SelectedBackupJob.Name, bsie.Message);
+                // No need for MessageBox here if already shown by CheckAndLog or if state update is enough
             }
-            catch (Exception ex)
+            catch (Exception ex) // Catch other exceptions from ExecuteBackupJobAsync itself
             {
-                StatusMessage = $"{LanguageManager.GetString("BackupError")} on job {SelectedBackupJob.Name}: {ex.Message}";
-                System.Windows.MessageBox.Show(StatusMessage, "Execution Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                GlobalStatusMessage = $"{LanguageManager.GetString("BackupError")} {SelectedBackupJob.Name}: {ex.Message}";
+                MessageBox.Show(GlobalStatusMessage, LanguageManager.GetString("ExecutionErrorTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
+                // Ensure VM state reflects error if not already done by ProgressUpdated
+                SelectedBackupJob.UpdateProgress(new BackupProgress { JobName = SelectedBackupJob.Name, State = BackupState.Error });
             }
             finally
             {
-                IsExecutingBackup = false;
-                if (CurrentProgressPercentage == 100 && StatusMessage.Contains(LanguageManager.GetString("ExecutingJob")))
-                    StatusMessage = $"{SelectedBackupJob.Name}: {LanguageManager.GetString("BackupCompleted")}";
-                else if (!StatusMessage.Contains(LanguageManager.GetString("JobInterrupted")) && !StatusMessage.Contains(LanguageManager.GetString("BackupError")))
-                {
-                }
+                UpdateOverallExecutionState(); // Re-evaluate global state
             }
         }
 
-        public async Task ExecuteAllJobsAsync()
+        public async Task ExecuteAllJobsAsync() // Sequential execution
         {
-            IsExecutingBackup = true;
-            CurrentProgressPercentage = 0;
+            if (_backupManagerService == null) { HandleUninitializedService("ExecuteAllJobsOperation"); return; }
+            if (!AreGlobalControlsEnabled) return;
+
+
+            GlobalStatusMessage = LanguageManager.GetString("StartingAllJobs");
             bool anErrorOccurredOverall = false;
-            string overallErrorMessage = string.Empty;
-            bool cancelledByUser = false;
+            string overallErrorMessageAccumulator = string.Empty;
+            bool cancelledByUserByBusinessSoftware = false;
+
+            // Reset all jobs before starting
+            foreach (var jobVm in BackupJobs) { jobVm.ResetState(); }
+            UpdateOverallExecutionState(); // IsExecutingAnyJob will become true as jobs start
 
             try
             {
-                foreach (var jobVm in BackupJobs.ToList())
+                foreach (var jobVm in BackupJobs.ToList()) // ToList for safe iteration if collection could change (not expected here)
                 {
+                    if (jobVm.IsExecuting) continue; // Skip if somehow already running
+
                     if (await CheckAndLogBusinessSoftwareAsync(jobVm.Name))
                     {
-                        // Using Path.GetFileName for a cleaner display in the message if BusinessSoftwareProcessName is a path
-                        string softwareDisplayName = Path.GetFileName(_appSettings?.BusinessSoftwareProcessName);
-                        overallErrorMessage = $"{LanguageManager.GetString("JobSkipped")} {jobVm.Name}. {LanguageManager.GetString("BusinessSoftwareDetected")} ({softwareDisplayName})";
-                        anErrorOccurredOverall = true;
+                        string softwareDisplayName = Path.GetFileName(_appSettings?.BusinessSoftwareProcessName ?? "Business Software");
+                        string message = string.Format(LanguageManager.GetString("JobSkippedBusinessSoftware"), jobVm.Name, softwareDisplayName);
+                        overallErrorMessageAccumulator += message + "\n";
+                        anErrorOccurredOverall = true; // Consider this an issue for the overall run
+                        // jobVm state already updated to Interrupted by CheckAndLogBusinessSoftwareAsync
 
-                        var userChoice = System.Windows.MessageBox.Show(
-                            $"{overallErrorMessage}\n\n{LanguageManager.GetString("ContinueWithOtherJobs")}",
-                            LanguageManager.GetString("BusinessSoftwareDetected"),
-                            MessageBoxButton.YesNo,
-                            MessageBoxImage.Warning);
+                        var userChoice = MessageBox.Show(
+                            $"{message}\n\n{LanguageManager.GetString("ContinueWithOtherJobs")}",
+                            LanguageManager.GetString("BusinessSoftwareDetected"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
                         if (userChoice == MessageBoxResult.No)
                         {
-                            StatusMessage = LanguageManager.GetString("AllJobsExecutionCancelled");
-                            cancelledByUser = true;
+                            cancelledByUserByBusinessSoftware = true;
                             break;
                         }
-                        continue;
+                        continue; // Skip this job and continue with the next
                     }
 
-                    CurrentProgressPercentage = 0;
-                    StatusMessage = $"{LanguageManager.GetString("ExecutingJob")} {jobVm.Name}...";
+                    GlobalStatusMessage = $"{LanguageManager.GetString("ExecutingJob")} {jobVm.Name}...";
                     try
                     {
                         await _backupManagerService.ExecuteBackupJobAsync(jobVm.JobModel);
+                        // Final state will be set by ProgressUpdated
                     }
-                    catch (BusinessSoftwareInterruptionException bsie)
+                    catch (BusinessSoftwareInterruptionException bsie) // Should be caught by BackupExecutor first
                     {
                         anErrorOccurredOverall = true;
-                        overallErrorMessage = $"{LanguageManager.GetString("JobInterrupted")} {jobVm.Name}: {bsie.Message}";
-                        StatusMessage = overallErrorMessage;
-                        var result = System.Windows.MessageBox.Show(
-                            $"{overallErrorMessage}\n\n{LanguageManager.GetString("ContinueWithOtherJobs")}",
-                            LanguageManager.GetString("OperationAborted"),
-                            MessageBoxButton.YesNo, MessageBoxImage.Error);
-                        if (result == MessageBoxResult.No)
-                        {
-                            cancelledByUser = true;
-                            break;
-                        }
+                        string msg = string.Format(LanguageManager.GetString("JobInterruptedWithMessage"), jobVm.Name, bsie.Message);
+                        overallErrorMessageAccumulator += msg + "\n";
+                        // No need for MessageBox here, BackupExecutor handles state. User already asked about BS.
                     }
-                    catch (Exception ex)
+                    catch (Exception ex) // Other errors during this specific job's execution
                     {
                         anErrorOccurredOverall = true;
-                        overallErrorMessage = $"{LanguageManager.GetString("BackupError")} on job {jobVm.Name}: {ex.Message}";
-                        StatusMessage = overallErrorMessage;
-                        var result = System.Windows.MessageBox.Show(
-                            $"{overallErrorMessage}\n\n{LanguageManager.GetString("ContinueWithOtherJobs")}",
-                            "Execution Error",
-                            MessageBoxButton.YesNo, MessageBoxImage.Error);
-                        if (result == MessageBoxResult.No)
-                        {
-                            cancelledByUser = true;
-                            break;
-                        }
+                        string msg = $"{LanguageManager.GetString("BackupError")} {jobVm.Name}: {ex.Message}";
+                        overallErrorMessageAccumulator += msg + "\n";
+                        jobVm.UpdateProgress(new BackupProgress { JobName = jobVm.Name, State = BackupState.Error }); // Ensure UI reflects error
+
+                        var result = MessageBox.Show( // Ask user if they want to continue after an error
+                            $"{msg}\n\n{LanguageManager.GetString("ContinueWithOtherJobs")}",
+                            LanguageManager.GetString("ExecutionErrorTitle"), MessageBoxButton.YesNo, MessageBoxImage.Error);
+                        if (result == MessageBoxResult.No) { cancelledByUserByBusinessSoftware = true; break; } // User chose to stop all
                     }
+
+                    // If a job was paused and then resumed, and then the "ExecuteAll" continues, this is fine.
+                    // If a job was STOPPED by the user, ExecuteBackupJobAsync would complete (with Stopped state).
+                    // The loop here would just move to the next job.
                 }
 
-                if (cancelledByUser)
+                // After all jobs attempted
+                if (cancelledByUserByBusinessSoftware)
                 {
+                    GlobalStatusMessage = LanguageManager.GetString("AllJobsExecutionCancelled");
                 }
                 else if (anErrorOccurredOverall)
                 {
-                    StatusMessage = $"{LanguageManager.GetString("AllJobsCompletedWithIssues")}: {overallErrorMessage}";
+                    GlobalStatusMessage = LanguageManager.GetString("AllJobsCompletedWithIssues");
+                    Debug.WriteLine("--- Issues during sequential all jobs execution ---");
+                    Debug.WriteLine(overallErrorMessageAccumulator);
+                    Debug.WriteLine("--------------------------------------------------");
                 }
                 else
                 {
-                    StatusMessage = LanguageManager.GetString("AllJobsCompletedSuccessfully");
+                    GlobalStatusMessage = LanguageManager.GetString("AllJobsCompletedSuccessfully");
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) // Catch-all for unexpected errors in the loop itself
             {
-                StatusMessage = $"{LanguageManager.GetString("GenericErrorDuringAllJobs")} {ex.Message}";
-                System.Windows.MessageBox.Show(StatusMessage, "Execution Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                GlobalStatusMessage = $"{LanguageManager.GetString("GenericErrorDuringAllJobs")} {ex.Message}";
+                MessageBox.Show(GlobalStatusMessage, LanguageManager.GetString("ExecutionErrorTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
-                IsExecutingBackup = false;
+                UpdateOverallExecutionState(); // Final update to global execution state and button enables
+                                               // Ensure any jobs that were "Executing" but not completed (e.g. due to cancellation of loop) are reset or marked appropriately
+                foreach (var jobVm in BackupJobs)
+                {
+                    if (jobVm.IsExecuting && (jobVm.StatusMessage.Contains("Actif") || jobVm.StatusMessage.Contains("Active")))
+                    {
+                        jobVm.ResetState(); // Or set to a specific "Cancelled by User" state
+                    }
+                }
             }
         }
 
+        private async Task StartAllBackupsInParallelAsync()
+        {
+            if (_backupManagerService == null) { HandleUninitializedService("StartAllBackupsOperation"); return; }
+            if (!AreGlobalControlsEnabled) return;
+
+            GlobalStatusMessage = LanguageManager.GetString("StartingAllJobs");
+            foreach (var jobVm in BackupJobs) { jobVm.ResetState(); } // Reset before starting
+            UpdateOverallExecutionState(); // IsExecutingAnyJob will become true
+
+            // Business Software Check for all jobs before starting any in parallel
+            bool businessSoftwareRunning = false;
+            foreach (var jobVm in BackupJobs)
+            {
+                if (await CheckAndLogBusinessSoftwareAsync(jobVm.Name))
+                {
+                    businessSoftwareRunning = true; // Mark that BS is running for at least one job.
+                    // jobVm state is updated to Interrupted by CheckAndLog.
+                }
+            }
+
+            if (businessSoftwareRunning)
+            {
+                // Ask ONCE if user wants to proceed with non-blocked jobs, or cancel all.
+                var userChoice = MessageBox.Show(
+                    $"{LanguageManager.GetString("BusinessSoftwareDetectedForSome")}\n\n{LanguageManager.GetString("ContinueWithNonBlockedJobs")}",
+                    LanguageManager.GetString("BusinessSoftwareDetected"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
+
+                if (userChoice == MessageBoxResult.No)
+                {
+                    GlobalStatusMessage = LanguageManager.GetString("AllJobsExecutionCancelled");
+                    UpdateOverallExecutionState();
+                    return; // User cancelled all parallel execution
+                }
+                // If Yes, proceed to run only jobs not marked as Interrupted.
+            }
+
+
+            try
+            {
+                // Filter out jobs that were marked as Interrupted by the BS check
+                var jobsToRun = BackupJobs.Where(vm => vm.JobModel.Name != null &&
+                                              _backupManagerService.GetAllJobs().Any(j => j.Name == vm.JobModel.Name) &&
+                                              vm.StatusMessage != LanguageManager.GetString("StatusInterrupted")) // Check StatusMessage for Interrupted state
+                                     .Select(vm => vm.JobModel)
+                                     .ToList();
+
+                _backupManagerService.StartAllJobsInParallel(jobsToRun); // Modified to take a list
+                await _backupManagerService.WaitForAllJobsAsync(); // Wait for all these started tasks
+                _backupManagerService.ClearFinishedJobs(); // Clean up tracking
+
+                // Final status determination after all parallel jobs are done
+                bool anyJobHadIssues = BackupJobs.Any(vm =>
+                    vm.StatusMessage == LanguageManager.GetString("StatusError") ||
+                    vm.StatusMessage == LanguageManager.GetString("StatusInterrupted")); // Check final states
+
+                if (anyJobHadIssues)
+                {
+                    GlobalStatusMessage = LanguageManager.GetString("AllJobsCompletedWithIssues");
+                }
+                else if (BackupJobs.All(vm => vm.StatusMessage == LanguageManager.GetString("StatusCompleted") ||
+                                             (!vm.IsExecuting && vm.StatusMessage == LanguageManager.GetString("StatusReady")))) // If some were not run (e.g. filtered out)
+                {
+                    GlobalStatusMessage = LanguageManager.GetString("AllJobsCompletedSuccessfully");
+                }
+                else
+                {
+                    // Catch-all for mixed states or unexpected outcomes
+                    GlobalStatusMessage = LanguageManager.GetString("AllOperationsFinished");
+                }
+
+            }
+            catch (Exception ex)
+            {
+                GlobalStatusMessage = $"{LanguageManager.GetString("ErrorDuringAllJobsExecution")}: {ex.Message}";
+                MessageBox.Show(GlobalStatusMessage, LanguageManager.GetString("ExecutionErrorTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                UpdateOverallExecutionState(); // Final state update
+            }
+        }
+        private void OnApplicationExit(object sender, ExitEventArgs e)
+        {
+            _socketService?.Stop();
+        }
+
+
         private async Task SaveJobsConfigurationAsync()
         {
+            if (_backupManagerService == null)
+            {
+                System.Diagnostics.Debug.WriteLine("SaveJobsConfigurationAsync: _backupManagerService is null. Configuration not saved.");
+                return;
+            }
+            // Ensure we are saving the list of jobs known by the BackupManagerService
             await ConfigManager.SaveJobsAsync(_backupManagerService.GetAllJobs().ToList());
         }
     }

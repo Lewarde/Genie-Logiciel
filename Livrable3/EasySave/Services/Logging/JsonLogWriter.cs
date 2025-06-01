@@ -8,6 +8,7 @@ namespace Logger
     public class JsonLogWriter : ILogWriter
     {
         private readonly string _logDirectory;
+        private static readonly object _fileLock = new object();
 
         public JsonLogWriter(string logDirectory)
         {
@@ -40,8 +41,19 @@ namespace Logger
 
             string json = JsonSerializer.Serialize(logLine, options);
 
-            // For a simple approach where each log is a JSON object on a new line:
-            File.AppendAllText(logFilePath, json + Environment.NewLine);
+            lock (_fileLock)
+            {
+                try
+                {
+
+                    File.AppendAllText(logFilePath, json + Environment.NewLine);
+                }
+                catch (Exception ex)
+                {
+
+                    Console.WriteLine($"[JsonLogWriter] Error writing to log file {logFilePath}: {ex.Message}");
+                }
+            }
         }
     }
 }

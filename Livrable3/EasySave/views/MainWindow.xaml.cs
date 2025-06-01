@@ -1,9 +1,11 @@
-﻿using System;
+﻿// MainWindow.xaml.cs
+using System;
 using System.Windows;
-using System.Windows.Controls;
+using System.Windows.Controls; // Nécessaire pour ListBox, TextBlock, etc.
 using EasySave.ViewModels;
-using EasySave.Utils; 
-using System.ComponentModel; 
+using EasySave.Utils;
+using System.ComponentModel;
+using System.Windows.Media.Imaging;
 
 namespace EasySave.Wpf.Views
 {
@@ -15,35 +17,29 @@ namespace EasySave.Wpf.Views
         {
             InitializeComponent();
             _viewModel = new MainViewModel();
-            this.DataContext = _viewModel; // Set DataContext for XAML Bindings
+            this.DataContext = _viewModel;
             this.Loaded += MainWindow_Loaded;
+
         }
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            await _viewModel.InitializeAsync(); // Loads data, languages, etc.
-
-            // ViewModel PropertyChanged subscription for dynamic UI updates (e.g., language)
+            await _viewModel.InitializeAsync();
             _viewModel.PropertyChanged += ViewModel_PropertyChanged;
-            LocalizeStaticUI(); // Initial localization
-
-            // Button enabled states are now primarily handled by AreControlsEnabled binding in XAML.
-            // If ProgressBar visibility needs to be explicitly managed or other complex scenarios,
-            // ViewModel_PropertyChanged can handle them.
+            LocalizeStaticUI();
         }
 
         private void ViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName != nameof(MainViewModel.CurrentLanguage))
+            if (e.PropertyName == nameof(MainViewModel.CurrentLanguage))
             {
                 LocalizeStaticUI();
             }
         }
 
-        // In MainWindow.xaml.cs
         private void LocalizeStaticUI()
         {
-            this.Title = LanguageManager.GetString("WelcomeMessage"); // Or "EasySave Application"
+            this.Title = LanguageManager.GetString("WelcomeMessage");
             labelJobsHeader.Text = LanguageManager.GetString("BackupJobs");
             buttonAddJob.Content = LanguageManager.GetString("CreateBackupJob");
             buttonEditJob.Content = LanguageManager.GetString("ModifyBackupJob");
@@ -52,8 +48,7 @@ namespace EasySave.Wpf.Views
             buttonExecuteAll.Content = LanguageManager.GetString("ExecuteAllJobs");
             labelLanguage.Text = LanguageManager.GetString("Language") + ":";
             labelLogFormat.Text = LanguageManager.GetString("LogFormat") + ":";
-            // Add localization for the new label
-            labelBusinessSoftware.Text = LanguageManager.GetString("BusinessSoftware") + ":"; // Assuming "BusinessSoftware" is the key
+            labelBusinessSoftware.Text = LanguageManager.GetString("BusinessSoftware") + ":";
         }
         private void listBoxBackupJobs_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -61,24 +56,28 @@ namespace EasySave.Wpf.Views
             {
                 _viewModel.SelectedBackupJob = selectedVm;
             }
+            else // Si rien n'est sélectionné (par exemple, après une suppression)
+            {
+                _viewModel.SelectedBackupJob = null;
+            }
         }
 
         private async void buttonAddJob_Click(object sender, RoutedEventArgs e)
         {
-            await _viewModel.AddBackupJobAsync(this); // Pass owner window for dialogs
+            await _viewModel.AddBackupJobAsync(this);
         }
 
         private async void buttonEditJob_Click(object sender, RoutedEventArgs e)
         {
             if (_viewModel.SelectedBackupJob != null)
             {
-                await _viewModel.EditBackupJobAsync(this); // Pass owner window
+                await _viewModel.EditBackupJobAsync(this);
             }
             else
             {
                 System.Windows.MessageBox.Show(
                     LanguageManager.GetString("InvalidJobIndex"),
-                    "Selection Error",
+                    LanguageManager.GetString("SelectionErrorTitle"), // Ajout d'une clé pour le titre
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
             }
@@ -88,21 +87,13 @@ namespace EasySave.Wpf.Views
         {
             if (_viewModel.SelectedBackupJob != null)
             {
-                // Consider adding a confirmation dialog here
-                // var result = System.Windows.MessageBox.Show(
-                //    string.Format(LanguageManager.GetString("ConfirmDeleteJob"), _viewModel.SelectedBackupJob.Name),
-                //    LanguageManager.GetString("Confirmation"),
-                //    MessageBoxButton.YesNo, MessageBoxImage.Warning);
-                // if (result == MessageBoxResult.Yes)
-                // {
                 await _viewModel.DeleteBackupJobAsync();
-                // }
             }
             else
             {
                 System.Windows.MessageBox.Show(
                    LanguageManager.GetString("InvalidJobIndex"),
-                   "Selection Error",
+                   LanguageManager.GetString("SelectionErrorTitle"),
                    MessageBoxButton.OK,
                    MessageBoxImage.Warning);
             }
@@ -118,7 +109,7 @@ namespace EasySave.Wpf.Views
             {
                 System.Windows.MessageBox.Show(
                     LanguageManager.GetString("InvalidJobIndex"),
-                    "Selection Error",
+                    LanguageManager.GetString("SelectionErrorTitle"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
             }

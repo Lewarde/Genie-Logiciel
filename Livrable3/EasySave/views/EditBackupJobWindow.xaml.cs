@@ -27,8 +27,7 @@ namespace EasySave.Wpf.Views
             labelName.Text = LanguageManager.GetString("EnterJobName");
             labelSource.Text = LanguageManager.GetString("EnterSourceDir");
             labelTarget.Text = LanguageManager.GetString("EnterTargetDir");
-            labelType.Text = LanguageManager.GetString("SelectBackupType");
-            // Assurez-vous d'avoir un label pour comboBoxTypeFile dans votre XAML, par exemple labelFileType.Text = "Type de fichier à chiffrer:"
+            labelTypePrio.Text = LanguageManager.GetString("SelectTypePrio");
             buttonOK.Content = LanguageManager.GetString("OK");
             buttonCancel.Content = LanguageManager.GetString("Cancel");
         }
@@ -37,40 +36,67 @@ namespace EasySave.Wpf.Views
         {
             // ComboBox pour le type de sauvegarde
 
-
-
-            // ComboBox pour l'extension de fichier à chiffrer
+            comboBoxTypeFilePrio.Items.Clear();
             comboBoxTypeFile.Items.Clear();
+
+            // Ajouter "Aucune priorité" comme première option
+            comboBoxTypeFilePrio.Items.Add(new ComboBoxItemPriorityViewModel { DisplayName = LanguageManager.GetString("NoPriority"), Value = PriorityFileExtension.Null });
+
+            foreach (PriorityFileExtension prio in Enum.GetValues(typeof(PriorityFileExtension)))
+            {
+                if (prio != PriorityFileExtension.Null)
+                {
+                    comboBoxTypeFilePrio.Items.Add(new ComboBoxItemPriorityViewModel { DisplayName = "." + prio.ToString().ToLower(), Value = prio });
+                }
+            }
+            comboBoxTypeFilePrio.DisplayMemberPath = "DisplayName";
+
+            // Sélectionner l'élément actuel du ViewModel pour la priorité
+            var currentPrioItem = comboBoxTypeFilePrio.Items.Cast<ComboBoxItemPriorityViewModel>()
+                .FirstOrDefault(item => item.Value == _viewModel.Priority);
+            if (currentPrioItem != null)
+            {
+                comboBoxTypeFilePrio.SelectedItem = currentPrioItem;
+            }
+            else if (comboBoxTypeFilePrio.Items.Count > 0)
+            {
+                comboBoxTypeFilePrio.SelectedIndex = 0;
+                _viewModel.Priority = ((ComboBoxItemPriorityViewModel)comboBoxTypeFilePrio.SelectedItem).Value;
+            }
+
             // Ajouter "Aucun" ou "Pas de chiffrement" comme première option
             comboBoxTypeFile.Items.Add(new ComboBoxItemViewModel { DisplayName = LanguageManager.GetString("NoEncryption"), Value = EncryptionFileExtension.Null });
 
             foreach (EncryptionFileExtension ext in Enum.GetValues(typeof(EncryptionFileExtension)))
             {
-                if (ext != EncryptionFileExtension.Null) // Ne pas ajouter Null deux fois
+                if (ext != EncryptionFileExtension.Null)
                 {
-                    // Ajoute l'extension avec un point devant pour l'affichage
                     comboBoxTypeFile.Items.Add(new ComboBoxItemViewModel { DisplayName = "." + ext.ToString().ToLower(), Value = ext });
                 }
             }
-            comboBoxTypeFile.DisplayMemberPath = "DisplayName"; // Afficher le nom convivial
+            comboBoxTypeFile.DisplayMemberPath = "DisplayName";
 
-            // Sélectionner l'élément actuel du ViewModel
+            // Sélectionner l'élément actuel du ViewModel pour le chiffrement
             var currentExtensionItem = comboBoxTypeFile.Items.Cast<ComboBoxItemViewModel>()
-                                       .FirstOrDefault(item => item.Value == _viewModel.FileExtension);
+                .FirstOrDefault(item => item.Value == _viewModel.FileExtension);
             if (currentExtensionItem != null)
             {
                 comboBoxTypeFile.SelectedItem = currentExtensionItem;
             }
             else if (comboBoxTypeFile.Items.Count > 0)
             {
-                comboBoxTypeFile.SelectedIndex = 0; // Sélectionner "Aucun" par défaut
+                comboBoxTypeFile.SelectedIndex = 0;
                 _viewModel.FileExtension = ((ComboBoxItemViewModel)comboBoxTypeFile.SelectedItem).Value;
             }
         }
 
 
-        private void comboBoxBackupType_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void comboBoxTypeFilePrio_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (comboBoxTypeFilePrio.SelectedItem is ComboBoxItemPriorityViewModel selectedItem)
+            {
+                _viewModel.Priority = selectedItem.Value;
+            }
         }
 
         // Gestionnaire pour le ComboBox de type de fichier
@@ -130,11 +156,16 @@ namespace EasySave.Wpf.Views
         }
     }
 
-    // Classe d'aide pour afficher des noms conviviaux dans le ComboBox
-    // tout en conservant la valeur de l'énumération.
     public class ComboBoxItemViewModel
     {
         public string DisplayName { get; set; }
         public EncryptionFileExtension Value { get; set; }
     }
+
+    public class ComboBoxItemPriorityViewModel
+    {
+        public string DisplayName { get; set; }
+        public PriorityFileExtension Value { get; set; }
+    }
+
 }

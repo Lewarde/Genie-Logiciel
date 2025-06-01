@@ -27,10 +27,12 @@ namespace EasySave.Models
 
     public enum BackupState
     {
-        Inactive,
-        Active,
-        Completed,
-        Error,
-        Interrupted // New state for business software interruption
+        Inactive,   // Not yet started or after completion/error/stop
+        Active,     // Currently processing files
+        Paused,     // Execution is paused by user
+        Stopped,    // Execution is stopped by user
+        Completed,  // All files processed successfully
+        Error,      // An error occurred during execution
+        Interrupted // Interrupted by business software
     }
 }

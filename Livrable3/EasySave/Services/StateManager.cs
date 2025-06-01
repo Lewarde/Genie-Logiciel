@@ -12,6 +12,9 @@ namespace EasySave.Services
         private readonly string _stateDirectory;
         private readonly string _allStatesFile;
 
+        // 🔐 Verrou statique partagé par toutes les instances
+        private static readonly object _stateFileLock = new object();
+
         public StateManager()
         {
             _stateDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "EasySave", "States");
@@ -25,7 +28,6 @@ namespace EasySave.Services
         {
             progress.Timestamp = DateTime.Now;
 
-            // Format de l’état
             var state = new
             {
                 Name = progress.JobName,
@@ -35,31 +37,34 @@ namespace EasySave.Services
                 TotalFilesToCopy = progress.TotalFilesCount,
                 TotalFilesSize = progress.TotalFilesSize,
                 NbFilesLeftToDo = progress.RemainingFilesCount,
-                Progression = progress.TotalFilesCount == 0 ? 0 : 
+                Progression = progress.TotalFilesCount == 0 ? 0 :
                               (int)(((double)(progress.TotalFilesCount - progress.RemainingFilesCount) / progress.TotalFilesCount) * 100)
             };
 
             var options = new JsonSerializerOptions { WriteIndented = true };
 
-            // Sauvegarder l’état individuel
             string singleStatePath = Path.Combine(_stateDirectory, $"{progress.JobName}_state.json");
-            await File.WriteAllTextAsync(singleStatePath, JsonSerializer.Serialize(state, options));
 
-            // Générer l’ensemble des états dans un fichier global
-            List<object> allStates = new();
-            foreach (string file in Directory.GetFiles(_stateDirectory, "*_state.json"))
+            lock (_stateFileLock)
             {
-                string content = await File.ReadAllTextAsync(file);
-                try
-                {
-                    var parsed = JsonSerializer.Deserialize<object>(content);
-                    if (parsed != null)
-                        allStates.Add(parsed);
-                }
-                catch { }
-            }
+                // 🔒 Bloc critique : une seule tâche y entre à la fois
+                File.WriteAllText(singleStatePath, JsonSerializer.Serialize(state, options));
 
-            await File.WriteAllTextAsync(_allStatesFile, JsonSerializer.Serialize(allStates, options));
+                List<object> allStates = new();
+                foreach (string file in Directory.GetFiles(_stateDirectory, "*_state.json"))
+                {
+                    try
+                    {
+                        string content = File.ReadAllText(file);
+                        var parsed = JsonSerializer.Deserialize<object>(content);
+                        if (parsed != null)
+                            allStates.Add(parsed);
+                    }
+                    catch { /* Ignore files that can't be read or parsed */ }
+                }
+
+                File.WriteAllText(_allStatesFile, JsonSerializer.Serialize(allStates, options));
+            }
         }
     }
 }

@@ -8,24 +8,25 @@ using EasySave.Services;
 using EasySave.Services.CryptoSoft;
 using EasySave.Utils;
 using Logger;
-using System.Diagnostics; // For Debug.WriteLine
-using System.Collections.Concurrent; // For ConcurrentDictionary
-using System.Threading; // For CancellationTokenSource, ManualResetEventSlim
+using System.Diagnostics;
+using System.Collections.Concurrent;
+using System.Threading;
 
 namespace EasySave.BackupExecutor
 {
+    // Manages backup job execution, including pausing, resuming, and stopping jobs.
     public class BackupExecutor : IBackupExecutor
     {
         private readonly LogManager _logManager;
         private readonly StateManager _stateManager;
         private readonly EncryptionService _encryptionService;
         private readonly string _businessSoftwarePath;
-        private const long MaxFileSizeBytes = 100 * 1024 * 1024;
-        public event Action<BackupProgress> ProgressUpdated;
+        private const long MaxFileSizeBytes = 100 * 1024 * 1024; // Max file size for backup.
+        public event Action<BackupProgress> ProgressUpdated; // Event for progress updates.
 
         private readonly ConcurrentDictionary<string, JobControlContext> _activeJobControls;
 
-
+        // Constructor initializes services and paths.
         public BackupExecutor(LogManager logManager, StateManager stateManager, EncryptionService encryptionService, string businessSoftwareFullPath)
         {
             _logManager = logManager ?? throw new ArgumentNullException(nameof(logManager));
@@ -35,11 +36,13 @@ namespace EasySave.BackupExecutor
             _activeJobControls = new ConcurrentDictionary<string, JobControlContext>();
         }
 
+        // Raises progress update event.
         private void RaiseProgress(BackupProgress progress)
         {
             ProgressUpdated?.Invoke(progress);
         }
 
+        // Cleans up job control resources.
         private void CleanupJobControls(string jobName)
         {
             if (_activeJobControls.TryRemove(jobName, out var context))
@@ -48,11 +51,12 @@ namespace EasySave.BackupExecutor
             }
         }
 
+        // Pauses a backup job.
         public async Task PauseJobAsync(string jobName)
         {
             if (_activeJobControls.TryGetValue(jobName, out var context))
             {
-                context.PauseEvent.Reset(); // Signal to pause
+                context.PauseEvent.Reset();
                 var progress = new BackupProgress { JobName = jobName, State = BackupState.Paused, Timestamp = DateTime.Now };
                 await _stateManager.UpdateStateAsync(progress);
                 RaiseProgress(progress);
@@ -60,11 +64,12 @@ namespace EasySave.BackupExecutor
             }
         }
 
+        // Resumes a paused backup job.
         public async Task ResumeJobAsync(string jobName)
         {
             if (_activeJobControls.TryGetValue(jobName, out var context))
             {
-                context.PauseEvent.Set(); 
+                context.PauseEvent.Set();
                 var progress = new BackupProgress { JobName = jobName, State = BackupState.Active, Timestamp = DateTime.Now };
                 await _stateManager.UpdateStateAsync(progress);
                 RaiseProgress(progress);
@@ -72,25 +77,24 @@ namespace EasySave.BackupExecutor
             }
         }
 
+        // Stops a backup job.
         public async Task StopJobAsync(string jobName)
         {
             if (_activeJobControls.TryGetValue(jobName, out var context))
             {
-                context.Cts.Cancel(); // Signal to stop
-                context.PauseEvent.Set(); // If paused, unblock it so it can see the cancellation
-                // The main loop, when it stops, will update the state to Stopped.
-                // Or, we can proactively set it here.
+                context.Cts.Cancel();
+                context.PauseEvent.Set();
                 var progress = new BackupProgress { JobName = jobName, State = BackupState.Stopped, Timestamp = DateTime.Now };
                 await _stateManager.UpdateStateAsync(progress);
                 RaiseProgress(progress);
                 Debug.WriteLine($"[BackupExecutor] Job '{jobName}' STOP signaled.");
             }
-            // CleanupJobControls will be called in the finally block of ExecuteBackupJobAsync
         }
 
-
+        // Checks if business software is running and throws an exception if it is.
         private async Task CheckBusinessSoftwareAndThrowIfNeeded(string jobName, BackupProgress progressForStateUpdate)
         {
+            // Check if the business software is running.
             if (!string.IsNullOrWhiteSpace(_businessSoftwarePath) && ProcessUtils.IsProcessRunning(_businessSoftwarePath))
             {
                 string softwareDisplayName = Path.GetFileName(_businessSoftwarePath);
@@ -98,6 +102,7 @@ namespace EasySave.BackupExecutor
 
                 Debug.WriteLine($"[BackupExecutor] {interruptionMessage}");
 
+                // Log the interruption.
                 await _logManager.LogFileOperationAsync(new LogEntry
                 {
                     Timestamp = DateTime.Now,
@@ -115,18 +120,17 @@ namespace EasySave.BackupExecutor
             }
         }
 
+        // Executes a backup job.
         public async Task ExecuteBackupJobAsync(BackupJob job)
         {
+            // Initialize job control context.
             var jobControl = _activeJobControls.GetOrAdd(job.Name, new JobControlContext());
-            jobControl.PauseEvent.Set(); // Ensure it's not paused from a previous run if controls were reused (should not happen with GetOrAdd for new executions)
-            // If Cts was cancelled from a previous stop, we need a new one.
-            // Better: ensure Execute is only called once per job instance or manage CTS lifecycle carefully.
-            // For now, assume GetOrAdd gives a fresh or correctly reset context.
-            // A robust solution would involve removing from _activeJobControls on completion/stop and re-adding.
+            jobControl.PauseEvent.Set();
 
-
+            // Check if business software is running.
             await CheckBusinessSoftwareAndThrowIfNeeded(job.Name, null);
 
+            // Check if source directory exists.
             DirectoryInfo sourceDir = new DirectoryInfo(job.SourceDirectory);
             if (!sourceDir.Exists)
             {
@@ -136,8 +140,11 @@ namespace EasySave.BackupExecutor
                 CleanupJobControls(job.Name);
                 throw new DirectoryNotFoundException($"Source directory not found: {job.SourceDirectory}");
             }
+
+            // Get all files from the source directory.
             FileInfo[] allSourceFiles = sourceDir.GetFiles("*", SearchOption.AllDirectories);
 
+            // Initialize progress tracking.
             var progress = new BackupProgress
             {
                 JobName = job.Name,
@@ -153,13 +160,15 @@ namespace EasySave.BackupExecutor
 
             try
             {
+                // Perform the backup process.
                 await PerformFullBackupAsync(job, progress, allSourceFiles, sourceDir, jobControl);
 
+                // Update progress state based on job completion status.
                 if (jobControl.Cts.IsCancellationRequested)
                 {
                     progress.State = BackupState.Stopped;
                 }
-                else if (progress.State != BackupState.Interrupted && progress.State != BackupState.Error) // Check if not interrupted by other means
+                else if (progress.State != BackupState.Interrupted && progress.State != BackupState.Error)
                 {
                     progress.State = BackupState.Completed;
                     progress.RemainingFilesCount = 0;
@@ -168,7 +177,7 @@ namespace EasySave.BackupExecutor
                 progress.CurrentSourceFile = string.Empty;
                 progress.CurrentTargetFile = string.Empty;
             }
-            catch (OperationCanceledException) // Catches cancellation from jobControl.Cts
+            catch (OperationCanceledException)
             {
                 Debug.WriteLine($"[BackupExecutor] Job {job.Name} was cancelled (stopped).");
                 progress.State = BackupState.Stopped;
@@ -189,35 +198,37 @@ namespace EasySave.BackupExecutor
                     JobName = job.Name,
                     Message = $"Job execution failed: {ex.Message}"
                 });
-                // Do not rethrow if we want finally to update state and then exit gracefully from this method.
-                // Or rethrow if the caller (BackupManagerService) handles it.
-                // For now, let's not rethrow here, the state is set to Error.
             }
             finally
             {
+                // Ensure progress is updated and cleanup job controls.
                 await _stateManager.UpdateStateAsync(progress);
                 RaiseProgress(progress);
-                CleanupJobControls(job.Name); // Clean up CTS and MRE
+                CleanupJobControls(job.Name);
             }
         }
 
+        // Performs the full backup process.
         private async Task PerformFullBackupAsync(BackupJob job, BackupProgress progress, FileInfo[] filesToProcess, DirectoryInfo sourceDir, JobControlContext jobControl)
         {
             int processedCount = 0;
 
+            // Return if there are no files to process.
             if (filesToProcess.Length == 0)
             {
                 Debug.WriteLine($"[BackupExecutor] No files to process for full backup job '{job.Name}'.");
                 return;
             }
 
+            // Order files by priority extension.
             filesToProcess = filesToProcess
                 .OrderByDescending(f => f.Extension.Equals(job.Priority.ToString(), StringComparison.OrdinalIgnoreCase))
                 .ToArray();
 
+            // Process each file.
             foreach (var file in filesToProcess)
             {
-                // Check for pause at the beginning of each file operation
+                // Handle pause event.
                 if (!jobControl.PauseEvent.IsSet)
                 {
                     progress.State = BackupState.Paused;
@@ -225,21 +236,20 @@ namespace EasySave.BackupExecutor
                     RaiseProgress(progress);
 
                     Debug.WriteLine($"[BackupExecutor] Job '{job.Name}' waiting for resume...");
-                    // Wait for resume or cancellation
                     WaitHandle.WaitAny(new[] { jobControl.PauseEvent.WaitHandle, jobControl.Cts.Token.WaitHandle });
 
                     if (jobControl.Cts.IsCancellationRequested) throw new OperationCanceledException(jobControl.Cts.Token);
 
-                    progress.State = BackupState.Active; // Resumed
+                    progress.State = BackupState.Active;
                     await _stateManager.UpdateStateAsync(progress);
                     RaiseProgress(progress);
                     Debug.WriteLine($"[BackupExecutor] Job '{job.Name}' resumed activity.");
                 }
 
-                // Check for stop
+                // Check for cancellation request.
                 if (jobControl.Cts.IsCancellationRequested) throw new OperationCanceledException(jobControl.Cts.Token);
 
-
+                // Prepare file paths.
                 string relativePath = Path.GetRelativePath(sourceDir.FullName, file.FullName);
                 string targetFilePath = Path.Combine(job.TargetDirectory, relativePath);
                 string targetDir = Path.GetDirectoryName(targetFilePath);
@@ -247,32 +257,32 @@ namespace EasySave.BackupExecutor
                 bool errorOccurred = false;
                 System.Diagnostics.Stopwatch copyStopwatch = null;
 
+                // Update progress with current file info.
                 progress.CurrentSourceFile = file.FullName;
                 progress.CurrentTargetFile = targetFilePath;
-                // State is already Active or updated by pause/resume logic
+
                 await _stateManager.UpdateStateAsync(progress);
                 RaiseProgress(progress);
 
                 try
                 {
+                    // Create target directory if it doesn't exist.
                     if (!Directory.Exists(targetDir))
                         Directory.CreateDirectory(targetDir);
 
+                    // Skip large files.
                     if (file.Length >= MaxFileSizeBytes)
                     {
                         Debug.WriteLine($"[BackupExecutor] Skipping file {file.FullName} for job '{job.Name}' due to size limit.");
-                        continue; // Skip this file, effectively reducing TotalFilesCount for percentage calc if not careful
-                                  // For simplicity, we'll let the count be, meaning progress might not reach 100% if many are skipped.
-                                  // A better way would be to filter these out beforehand.
+                        continue;
                     }
 
+                    // Handle file encryption if needed.
                     if (job.FileExtension != EncryptionFileExtension.Null &&
                         file.Extension.TrimStart('.').Equals(job.FileExtension.ToString(), StringComparison.OrdinalIgnoreCase))
                     {
                         string encryptedTargetPath = Path.Combine(targetDir, Path.GetFileName(file.Name) + ".crypt");
-                        progress.CurrentTargetFile = encryptedTargetPath; // Update target for encrypted file
-
-                        // TODO: Make encryption cancellable if CryptoSoft supports it
+                        progress.CurrentTargetFile = encryptedTargetPath;
                         encryptionTimeMs = _encryptionService.EncryptFile(file.FullName, targetDir);
                         if (encryptionTimeMs < 0)
                         {
@@ -282,9 +292,8 @@ namespace EasySave.BackupExecutor
                     }
                     else
                     {
+                        // Copy file if no encryption is needed.
                         copyStopwatch = System.Diagnostics.Stopwatch.StartNew();
-                        // File.Copy is synchronous and not easily cancellable mid-operation.
-                        // For true cancellability, would need custom copy logic or async I/O.
                         File.Copy(file.FullName, targetFilePath, true);
                         copyStopwatch.Stop();
                     }
@@ -298,18 +307,16 @@ namespace EasySave.BackupExecutor
                         Timestamp = DateTime.Now,
                         JobName = job.Name,
                         SourceFile = file.FullName,
-                        TargetFile = progress.CurrentTargetFile, // Use CurrentTargetFile which might be .crypt
+                        TargetFile = progress.CurrentTargetFile,
                         FileSize = file.Length,
-                        TransferTimeMs = -1, // Indicate error
-                        EncryptionTimeMs = encryptionTimeMs, // Log whatever time was spent, even if error
+                        TransferTimeMs = -1,
+                        EncryptionTimeMs = encryptionTimeMs,
                         Message = $"Error copying/encrypting file: {ex.Message}"
                     });
-                    // Decide if a single file error stops the whole job or just this file
-                    // Current logic: log and continue with next file, job will not be "Completed"
-                    // but will finish processing other files.
                 }
-                finally // Per file
+                finally
                 {
+                    // Log successful file operations.
                     if (!errorOccurred)
                     {
                         await _logManager.LogFileOperationAsync(new LogEntry
@@ -317,23 +324,22 @@ namespace EasySave.BackupExecutor
                             Timestamp = DateTime.Now,
                             JobName = job.Name,
                             SourceFile = file.FullName,
-                            TargetFile = progress.CurrentTargetFile, // Use CurrentTargetFile
+                            TargetFile = progress.CurrentTargetFile,
                             FileSize = file.Length,
                             TransferTimeMs = (copyStopwatch?.ElapsedMilliseconds ?? 0),
                             EncryptionTimeMs = encryptionTimeMs
                         });
                     }
-                    // This logic ensures that even if an error occurred for one file,
-                    // we update progress for the files that *were* processed.
-                    processedCount++; // A file attempt was made (success or fail)
-                    progress.RemainingFilesCount = filesToProcess.Length - processedCount;
-                    progress.RemainingFilesSize -= file.Length; // Subtract size whether copied or errored/skipped (for progress calc)
 
-                    // State remains Active unless paused/stopped/error at job level
+                    // Update progress counters.
+                    processedCount++;
+                    progress.RemainingFilesCount = filesToProcess.Length - processedCount;
+                    progress.RemainingFilesSize -= file.Length;
+
                     await _stateManager.UpdateStateAsync(progress);
                     RaiseProgress(progress);
                 }
-            } // End foreach file
+            }
         }
     }
 }

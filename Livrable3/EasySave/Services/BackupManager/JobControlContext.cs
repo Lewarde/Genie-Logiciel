@@ -1,5 +1,4 @@
-﻿// Create this new file: EasySave.BackupExecutor/JobControlContext.cs
-using System.Threading;
+﻿using System.Threading;
 
 namespace EasySave.BackupExecutor
 {
@@ -11,7 +10,7 @@ namespace EasySave.BackupExecutor
         public JobControlContext()
         {
             Cts = new CancellationTokenSource();
-            PauseEvent = new ManualResetEventSlim(true); // Initially not paused
+            PauseEvent = new ManualResetEventSlim(true); 
         }
 
         public void Dispose()

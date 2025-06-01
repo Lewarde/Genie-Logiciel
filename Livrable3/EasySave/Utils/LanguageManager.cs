@@ -201,14 +201,14 @@ namespace EasySave.Utils
                 { "ExecuteAllJobsOperation", "Impossible d'exécuter toutes les tâches" },
                 { "JobAlreadyRunning", "Cette tâche est déjà en cours d'exécution ou en pause."},
                 { "Info", "Information"},
-                // Status messages for BackupJobViewModel
+
                 { "StatusPaused", "En pause" },
                 { "StatusStopped", "Arrêté" },
                 { "StatusReady", "Prêt" },
                 { "StatusCompleted", "Terminé" },
                 { "StatusError", "Erreur" },
                 { "StatusInterrupted", "Interrompu (Logiciel Métier)" },
-                { "StatusActive", "Actif : {0}% - {1}" }, // {0} = percentage, {1} = current file
+                { "StatusActive", "Actif : {0}% - {1}" },
                 { "StatusCancelledOrNotRun", "Annulé / Non exécuté"},
                 { "NoPriority", "Aucune Priorité"},
                 { "NoEncryption", "Aucun Chiffrement"},
@@ -219,7 +219,7 @@ namespace EasySave.Utils
             _translations["en"] = englishTranslations;
             _translations["fr"] = frenchTranslations;
 
-            // System language detection (can be overridden by saved settings later)
+
             try
             {
                 string systemLanguage = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.ToLower();
@@ -230,7 +230,7 @@ namespace EasySave.Utils
             }
             catch (Exception ex)
             {
-                // Fallback to English if system language detection fails
+
                 _currentLanguage = "en";
                 Debug.WriteLine($"[LanguageManager] Error detecting system language: {ex.Message}. Defaulting to 'en'.");
             }
@@ -238,7 +238,7 @@ namespace EasySave.Utils
 
         public static string GetString(string key)
         {
-            if (_translations == null) Initialize(); // Ensure initialized
+            if (_translations == null) Initialize(); 
 
             if (_translations.TryGetValue(_currentLanguage, out var translations) &&
                 translations.TryGetValue(key, out string translation))
@@ -246,19 +246,19 @@ namespace EasySave.Utils
                 return translation;
             }
 
-            // Fallback to English if current language or key not found
+
             if (_currentLanguage != "en" && _translations.TryGetValue("en", out var englishTranslations) &&
                 englishTranslations.TryGetValue(key, out string englishTranslation))
             {
                 Debug.WriteLine($"[LanguageManager] Key '{key}' not found for language '{_currentLanguage}'. Fell back to English.");
-                return englishTranslation; // Return English translation
+                return englishTranslation; 
             }
 
             Debug.WriteLine($"[LanguageManager] Key '{key}' not found for language '{_currentLanguage}' or English. Returning key itself.");
-            return key; // Return the key itself if not found anywhere
+            return key; 
         }
 
-        // Overload for GetString with specific language, useful for initial checks or tests
+
         public static string GetString(string key, string languageCode)
         {
             if (_translations == null) Initialize();

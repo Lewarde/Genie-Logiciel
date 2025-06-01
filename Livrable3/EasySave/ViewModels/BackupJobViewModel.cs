@@ -1,8 +1,8 @@
 // BackupJobViewModel.cs
 using EasySave.Models;
 using EasySave.Commands; // Assuming RelayCommand is here
-using System.IO; // Pour Path.GetFileName
-using System.Windows.Input; // Pour ICommand
+using System.IO; // For Path.GetFileName
+using System.Windows.Input; // For ICommand
 using EasySave.BackupManager; // Namespace for BackupManager service
 using EasySave.Utils; // For LanguageManager
 
@@ -19,7 +19,7 @@ namespace EasySave.ViewModels
         public int CurrentProgressPercentage
         {
             get => _currentProgressPercentage;
-            set => SetProperty(ref _currentProgressPercentage, value);
+            set => SetProperty(ref _currentProgressPercentage, value); // Notify UI if value changes
         }
 
         private string _statusMessage;
@@ -29,7 +29,7 @@ namespace EasySave.ViewModels
             set => SetProperty(ref _statusMessage, value);
         }
 
-        private bool _isExecuting; // True if Active or Paused
+        private bool _isExecuting; // True if job is Active or Paused
         public bool IsExecuting
         {
             get => _isExecuting;
@@ -37,12 +37,12 @@ namespace EasySave.ViewModels
             {
                 if (SetProperty(ref _isExecuting, value))
                 {
-                    UpdateCommandStates();
+                    UpdateCommandStates(); // Update button states when execution state changes
                 }
             }
         }
 
-        private bool _isPaused; // True if Paused
+        private bool _isPaused; // True if job is Paused
         public bool IsPaused
         {
             get => _isPaused;
@@ -50,15 +50,17 @@ namespace EasySave.ViewModels
             {
                 if (SetProperty(ref _isPaused, value))
                 {
-                    UpdateCommandStates();
+                    UpdateCommandStates(); // Update button states when pause state changes
                 }
             }
         }
 
+        // Commands bound to the UI
         public ICommand PauseCommand { get; }
         public ICommand ResumeCommand { get; }
         public ICommand StopCommand { get; }
 
+        // Used to control whether each command is enabled
         private bool _canPause;
         public bool CanPause
         {
@@ -80,18 +82,19 @@ namespace EasySave.ViewModels
             set => SetProperty(ref _canStop, value);
         }
 
-
+        // Constructor
         public BackupJobViewModel(BackupJob job, EasySave.BackupManager.BackupManager backupManagerService)
         {
             _job = job;
             _backupManagerService = backupManagerService;
             Name = job.Name;
 
+            // RelayCommands are initialized with actions and conditions
             PauseCommand = new RelayCommand(async () => await _backupManagerService.PauseJobAsync(_job.Name), () => CanPause);
             ResumeCommand = new RelayCommand(async () => await _backupManagerService.ResumeJobAsync(_job.Name), () => CanResume);
             StopCommand = new RelayCommand(async () => await _backupManagerService.StopJobAsync(_job.Name), () => CanStop);
 
-            ResetState(); // Initial state
+            ResetState(); // Set default state
         }
 
         private string _name;
@@ -102,13 +105,13 @@ namespace EasySave.ViewModels
             {
                 if (SetProperty(ref _name, value))
                 {
-                    if (_job != null) _job.Name = value;
-                    OnPropertyChanged(nameof(DisplayMember));
+                    if (_job != null) _job.Name = value; // Update model too
+                    OnPropertyChanged(nameof(DisplayMember)); // Refresh display string
                 }
             }
         }
 
-
+        // Properties linked to BackupJob model
         public string SourceDirectory
         {
             get => _job.SourceDirectory;
@@ -161,9 +164,9 @@ namespace EasySave.ViewModels
             }
         }
 
-        public string DisplayMember => $"{Name}";
+        public string DisplayMember => $"{Name}"; // Used for UI display
 
-
+        // Updates internal model and notifies UI
         public void UpdateModel(BackupJob job)
         {
             _job = job;
@@ -175,6 +178,7 @@ namespace EasySave.ViewModels
             OnPropertyChanged(nameof(Priority));
         }
 
+        // Called to update progress and states from the backup process
         public void UpdateProgress(BackupProgress progress)
         {
             CurrentProgressPercentage = progress.Progress;
@@ -183,13 +187,17 @@ namespace EasySave.ViewModels
 
             switch (progress.State)
             {
-                case BackupState.Inactive: // Typically after completion, error, or stop
+                case BackupState.Inactive: // After stop, error, or finish
                     StatusMessage = LanguageManager.GetString("StatusReady");
                     IsExecuting = false;
                     IsPaused = false;
                     break;
                 case BackupState.Active:
-                    StatusMessage = string.Format(LanguageManager.GetString("StatusActive"), progress.Progress, Path.GetFileName(progress.CurrentSourceFile ?? "Initializing..."));
+                    // Show progress and current file
+                    StatusMessage = string.Format(
+                        LanguageManager.GetString("StatusActive"),
+                        progress.Progress,
+                        Path.GetFileName(progress.CurrentSourceFile ?? "Initializing..."));
                     break;
                 case BackupState.Paused:
                     StatusMessage = LanguageManager.GetString("StatusPaused");
@@ -212,31 +220,31 @@ namespace EasySave.ViewModels
                     break;
                 case BackupState.Interrupted:
                     StatusMessage = LanguageManager.GetString("StatusInterrupted");
-                    // IsExecuting might still be true if it's considered "active but blocked"
-                    // Or false if it's definitively stopped by the interruption.
-                    // For UI, let's treat it as not pausable/resumable by user directly.
                     IsExecuting = false;
                     IsPaused = false;
                     break;
                 default:
-                    StatusMessage = progress.State.ToString();
+                    StatusMessage = progress.State.ToString(); // Fallback
                     break;
             }
+
             UpdateCommandStates();
         }
 
+        // Updates the command availability based on state
         private void UpdateCommandStates()
         {
             CanPause = IsExecuting && !IsPaused;
             CanResume = IsExecuting && IsPaused;
             CanStop = IsExecuting;
 
-            // Notify UI that CanExecute might have changed
+            // Notify UI that CanExecute values may have changed
             (PauseCommand as RelayCommand)?.RaiseCanExecuteChanged();
             (ResumeCommand as RelayCommand)?.RaiseCanExecuteChanged();
             (StopCommand as RelayCommand)?.RaiseCanExecuteChanged();
         }
 
+        // Reset state when job is loaded or finished
         public void ResetState()
         {
             CurrentProgressPercentage = 0;

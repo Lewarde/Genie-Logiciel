@@ -14,7 +14,7 @@ using EasySave.Wpf.Views;
 using EasySave.Commands;
 using System.IO;
 using System.Diagnostics;
-using System.Net.Sockets;
+using System.Net.Sockets; // For network communication (sockets)
 using EasySave.Services;
 
 namespace EasySave.ViewModels
@@ -27,7 +27,7 @@ namespace EasySave.ViewModels
         private BackupJobViewModel _selectedBackupJob;
         private AppSettingsData _appSettings;
 
-        private static Socket clientSocket;
+        private static Socket clientSocket; // This field seems unused in the current context.
         private string _currentLanguage;
         private string _currentLogFormat;
         private bool _isExecutingAnyJob; // Renamed for clarity
@@ -57,18 +57,18 @@ namespace EasySave.ViewModels
             {
                 if (SetProperty(ref _currentLanguage, value))
                 {
-                    LanguageManager.SetLanguage(value);
+                    LanguageManager.SetLanguage(value); // Update the application's language
                     if (_appSettings != null)
                     {
-                        _appSettings.Language = value;
+                        _appSettings.Language = value; // Save the new language to settings
                         ConfigManager.SaveAppSettingsAsync(_appSettings);
                     }
-                    // OnPropertyChanged(nameof(AddButtonText)); // Assuming AddButtonText is localized
                     LocalizeDynamicUIText();
                 }
             }
         }
 
+        // Placeholder for updating UI elements that need manual text refresh after language change.
         private void LocalizeDynamicUIText()
         {
 
@@ -84,7 +84,7 @@ namespace EasySave.ViewModels
                     LogManager.Initialize(value); // Re-initialize LogManager with new format
                     if (_appSettings != null)
                     {
-                        _appSettings.LogFormat = value;
+                        _appSettings.LogFormat = value; // Save the new log format to settings
                         ConfigManager.SaveAppSettingsAsync(_appSettings);
                     }
                 }
@@ -124,8 +124,7 @@ namespace EasySave.ViewModels
                     OnPropertyChanged(nameof(AreGlobalControlsEnabled));
                     // This will affect StartAllCommand's CanExecute
                     ((RelayCommand)StartAllCommand).RaiseCanExecuteChanged();
-                    // And other global command buttons like Add, Edit, Delete job, Execute Selected/All (sequential)
-                    // These might need their own RelayCommands or a shared CanExecute logic.
+
                 }
             }
         }
@@ -139,15 +138,16 @@ namespace EasySave.ViewModels
         public MainViewModel()
         {
             BackupJobs = new ObservableCollection<BackupJobViewModel>();
+            // Command to start all backups, can only execute if global controls are enabled and service is up
             StartAllCommand = new RelayCommand(async () => await StartAllBackupsInParallelAsync(), () => AreGlobalControlsEnabled && _backupManagerService != null);
-            _socketService = new SocketService(8080); // Utiliser le port de votre choix
+            _socketService = new SocketService(8080); // Use any port you prefer
             try
             {
-                _socketService.Start();
+                _socketService.Start(); // Try to start the communication server
             }
             catch (Exception ex)
             {
-                // Gérer l'échec du démarrage du serveur (par exemple, port déjà utilisé)
+                // Handle server start failure (e.g., port already in use)
                 GlobalStatusMessage = $"Error starting communication server: {ex.Message}";
                 MessageBox.Show(GlobalStatusMessage, "Server Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
@@ -167,7 +167,7 @@ namespace EasySave.ViewModels
             {
                 LanguageManager.Initialize(); // Initialize translations first
                 _appSettings = await ConfigManager.LoadAppSettingsAsync();
-                if (_appSettings == null) _appSettings = new AppSettingsData();
+                if (_appSettings == null) _appSettings = new AppSettingsData(); // If no settings, create default
 
                 CurrentLanguage = _appSettings.Language; // Set language, triggers PropertyChanged and LanguageManager.SetLanguage
 
@@ -180,10 +180,11 @@ namespace EasySave.ViewModels
                 _backupManagerService = new EasySave.BackupManager.BackupManager(_appSettings);
                 if (_backupManagerService.GetBackupExecutor() != null)
                 {
+                    // Subscribe to progress updates from the backup process
                     _backupManagerService.GetBackupExecutor().ProgressUpdated += OnBackupProgressUpdated;
                 }
 
-                var jobModelsFromConfig = await ConfigManager.LoadJobsAsync();
+                var jobModelsFromConfig = await ConfigManager.LoadJobsAsync(); // Load saved backup jobs
                 BackupJobs.Clear();
                 foreach (var jobModel in jobModelsFromConfig)
                 {
@@ -201,15 +202,16 @@ namespace EasySave.ViewModels
             }
             finally
             {
-                UpdateOverallExecutionState(); // Initial check
+                UpdateOverallExecutionState(); // Initial check of execution state
             }
         }
 
         private async void OnBackupProgressUpdated(BackupProgress progress)
         {
             // Ensure UI updates happen on the UI thread
-            if (Application.Current?.Dispatcher.CheckAccess() == false)
+            if (Application.Current?.Dispatcher.CheckAccess() == false) // Check if we are on the UI thread
             {
+                // If not, switch to UI thread to update UI elements
                 Application.Current.Dispatcher.Invoke(() => UpdateJobAndOverallState(progress));
             }
             else
@@ -217,6 +219,7 @@ namespace EasySave.ViewModels
                 UpdateJobAndOverallState(progress);
             }
 
+            // Prepare data to send over socket
             var allJobsCurrentState = BackupJobs.Select(vm => new
             {
                 Name = vm.Name,
@@ -231,26 +234,29 @@ namespace EasySave.ViewModels
 
             if (_socketService != null)
             {
+                // Send current progress of all jobs to any connected clients
                 await _socketService.SendProgressToClientsAsync(allJobsCurrentState);
             }
         }
 
-
+        // Placeholder: Implement logic to get actual value.
         private int GetTotalFilesForJob(string jobName)
         {
-
             var jobVm = BackupJobs.FirstOrDefault(j => j.Name == jobName);
-
+            // TODO: This should ideally fetch pre-calculated or live data for jobs not currently emitting progress.
             return 0;
         }
+        // Placeholder: Implement logic to get actual value.
         private long GetTotalSizeForJob(string jobName)
         {
-            return 0; 
+            // TODO: Fetch pre-calculated or live data.
+            return 0;
         }
+        // Placeholder: Implement logic to get actual value.
         private int GetRemainingFilesForJob(string jobName)
         {
             var jobVm = BackupJobs.FirstOrDefault(j => j.Name == jobName);
-
+            // TODO: Fetch pre-calculated or live data.
             return 0;
         }
 
@@ -259,13 +265,13 @@ namespace EasySave.ViewModels
             var jobVm = BackupJobs.FirstOrDefault(j => j.JobModel.Name == progress.JobName);
             if (jobVm != null)
             {
-                jobVm.UpdateProgress(progress);
+                jobVm.UpdateProgress(progress); // Update the specific job's view model
             }
             else
             {
                 Debug.WriteLine($"[MainViewModel] Progress update for unknown job: {progress.JobName}");
             }
-            UpdateOverallExecutionState();
+            UpdateOverallExecutionState(); // Refresh the overall application state
         }
 
         private void UpdateOverallExecutionState()
@@ -281,16 +287,16 @@ namespace EasySave.ViewModels
                 {
                     GlobalStatusMessage = LanguageManager.GetString("AllJobsCompletedWithIssues");
                 }
-
+                // If no jobs are executing and none had issues, it might mean they completed successfully or are ready.
+                // More specific "all successful" message might be set by the methods calling this.
             }
-
         }
 
-
+        // Checks if specified business software is running. If so, logs and alerts user.
         private async Task<bool> CheckAndLogBusinessSoftwareAsync(string jobName)
         {
             string businessSoftwarePath = _appSettings?.BusinessSoftwareProcessName;
-            if (string.IsNullOrWhiteSpace(businessSoftwarePath)) return false;
+            if (string.IsNullOrWhiteSpace(businessSoftwarePath)) return false; // No software configured to check
 
             if (ProcessUtils.IsProcessRunning(businessSoftwarePath))
             {
@@ -307,10 +313,10 @@ namespace EasySave.ViewModels
                 // Update specific job VM state to Interrupted
                 var jobVm = BackupJobs.FirstOrDefault(j => j.Name == jobName);
                 jobVm?.UpdateProgress(new BackupProgress { JobName = jobName, State = BackupState.Interrupted });
-                UpdateOverallExecutionState();
-                return true;
+                UpdateOverallExecutionState(); // Refresh global state as a job is now interrupted
+                return true; // Business software is running
             }
-            return false;
+            return false; // Business software is not running
         }
 
         public async Task AddBackupJobAsync(Window owner)
@@ -320,14 +326,14 @@ namespace EasySave.ViewModels
 
             var newJobModel = new BackupJob();
             var newJobVm = new BackupJobViewModel(newJobModel, _backupManagerService); // Pass service
-            newJobVm.ResetState();
-            var editWindow = new EditBackupJobWindow(newJobVm) { Owner = owner };
+            newJobVm.ResetState(); // Set initial UI state for the new job VM
+            var editWindow = new EditBackupJobWindow(newJobVm) { Owner = owner }; // Show dialog to edit job details
 
-            if (editWindow.ShowDialog() == true)
+            if (editWindow.ShowDialog() == true) // If user confirms in dialog
             {
                 _backupManagerService.AddBackupJob(newJobModel); // Add to service's list
                 BackupJobs.Add(newJobVm); // Add to UI list
-                await SaveJobsConfigurationAsync();
+                await SaveJobsConfigurationAsync(); // Save the new job to config file
                 GlobalStatusMessage = LanguageManager.GetString("JobCreatedSuccessfully");
             }
         }
@@ -340,7 +346,7 @@ namespace EasySave.ViewModels
                 MessageBox.Show(LanguageManager.GetString("InvalidJobIndex"), LanguageManager.GetString("Error"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-            if (!AreGlobalControlsEnabled) return;
+            if (!AreGlobalControlsEnabled) return; // Prevent action if something is running
 
             // Clone the model for editing, so changes are only applied on OK.
             var originalJobModel = SelectedBackupJob.JobModel;
@@ -356,7 +362,7 @@ namespace EasySave.ViewModels
             var tempViewModelForEditing = new BackupJobViewModel(jobModelCloneForEditing, _backupManagerService);
             var editWindow = new EditBackupJobWindow(tempViewModelForEditing) { Owner = owner };
 
-            if (editWindow.ShowDialog() == true)
+            if (editWindow.ShowDialog() == true) // If user confirms changes
             {
                 // Apply changes from the clone back to the original model
                 originalJobModel.Name = tempViewModelForEditing.Name; // Update Name in model
@@ -367,7 +373,7 @@ namespace EasySave.ViewModels
 
                 // Update the existing ViewModel in the list to reflect model changes
                 SelectedBackupJob.UpdateModel(originalJobModel);
-                await SaveJobsConfigurationAsync();
+                await SaveJobsConfigurationAsync(); // Save changes to config file
                 GlobalStatusMessage = LanguageManager.GetString("JobModifiedSuccessfully");
             }
         }
@@ -380,18 +386,18 @@ namespace EasySave.ViewModels
                 MessageBox.Show(LanguageManager.GetString("InvalidJobIndex"), LanguageManager.GetString("Error"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-            if (!AreGlobalControlsEnabled) return;
+            if (!AreGlobalControlsEnabled) return; // Prevent action if something is running
 
             var result = MessageBox.Show(
                 string.Format(LanguageManager.GetString("ConfirmDeleteJob"), SelectedBackupJob.Name),
                 LanguageManager.GetString("Confirmation"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
 
-            if (result == MessageBoxResult.Yes)
+            if (result == MessageBoxResult.Yes) // If user confirms deletion
             {
                 _backupManagerService.RemoveBackupJob(SelectedBackupJob.JobModel); // Remove from service
                 BackupJobs.Remove(SelectedBackupJob); // Remove from UI
                 SelectedBackupJob = null; // Clear selection
-                await SaveJobsConfigurationAsync();
+                await SaveJobsConfigurationAsync(); // Update config file
                 GlobalStatusMessage = LanguageManager.GetString("JobDeletedSuccessfully");
             }
         }
@@ -410,7 +416,7 @@ namespace EasySave.ViewModels
                 return;
             }
 
-            if (await CheckAndLogBusinessSoftwareAsync(SelectedBackupJob.Name)) return; // BS check
+            if (await CheckAndLogBusinessSoftwareAsync(SelectedBackupJob.Name)) return; // BS check, aborts if software is running
 
             SelectedBackupJob.ResetState(); // Prepare VM for execution
             // IsExecutingAnyJob will be true once BackupExecutor updates state to Active via ProgressUpdated
@@ -441,10 +447,10 @@ namespace EasySave.ViewModels
             }
         }
 
-        public async Task ExecuteAllJobsAsync() // Sequential execution
+        public async Task ExecuteAllJobsAsync() // Sequential execution: one job after another
         {
             if (_backupManagerService == null) { HandleUninitializedService("ExecuteAllJobsOperation"); return; }
-            if (!AreGlobalControlsEnabled) return;
+            if (!AreGlobalControlsEnabled) return; // Don't start if already busy
 
 
             GlobalStatusMessage = LanguageManager.GetString("StartingAllJobs");
@@ -458,11 +464,12 @@ namespace EasySave.ViewModels
 
             try
             {
-                foreach (var jobVm in BackupJobs.ToList()) // ToList for safe iteration if collection could change (not expected here)
+                // ToList for safe iteration if collection could change (not expected here, but good practice)
+                foreach (var jobVm in BackupJobs.ToList())
                 {
-                    if (jobVm.IsExecuting) continue; // Skip if somehow already running
+                    if (jobVm.IsExecuting) continue; // Skip if somehow already running (e.g., manually started during this loop - unlikely)
 
-                    if (await CheckAndLogBusinessSoftwareAsync(jobVm.Name))
+                    if (await CheckAndLogBusinessSoftwareAsync(jobVm.Name)) // Check for business software before each job
                     {
                         string softwareDisplayName = Path.GetFileName(_appSettings?.BusinessSoftwareProcessName ?? "Business Software");
                         string message = string.Format(LanguageManager.GetString("JobSkippedBusinessSoftware"), jobVm.Name, softwareDisplayName);
@@ -473,10 +480,10 @@ namespace EasySave.ViewModels
                         var userChoice = MessageBox.Show(
                             $"{message}\n\n{LanguageManager.GetString("ContinueWithOtherJobs")}",
                             LanguageManager.GetString("BusinessSoftwareDetected"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
-                        if (userChoice == MessageBoxResult.No)
+                        if (userChoice == MessageBoxResult.No) // User chose to stop all further jobs
                         {
                             cancelledByUserByBusinessSoftware = true;
-                            break;
+                            break; // Exit the loop
                         }
                         continue; // Skip this job and continue with the next
                     }
@@ -485,9 +492,9 @@ namespace EasySave.ViewModels
                     try
                     {
                         await _backupManagerService.ExecuteBackupJobAsync(jobVm.JobModel);
-                        // Final state will be set by ProgressUpdated
+                        // Final state will be set by ProgressUpdated events from BackupExecutor
                     }
-                    catch (BusinessSoftwareInterruptionException bsie) // Should be caught by BackupExecutor first
+                    catch (BusinessSoftwareInterruptionException bsie) // Should be caught by BackupExecutor first and state updated
                     {
                         anErrorOccurredOverall = true;
                         string msg = string.Format(LanguageManager.GetString("JobInterruptedWithMessage"), jobVm.Name, bsie.Message);
@@ -540,6 +547,7 @@ namespace EasySave.ViewModels
                                                // Ensure any jobs that were "Executing" but not completed (e.g. due to cancellation of loop) are reset or marked appropriately
                 foreach (var jobVm in BackupJobs)
                 {
+                    // If a job was still marked as actively running (e.g. user cancelled loop before it finished)
                     if (jobVm.IsExecuting && (jobVm.StatusMessage.Contains("Actif") || jobVm.StatusMessage.Contains("Active")))
                     {
                         jobVm.ResetState(); // Or set to a specific "Cancelled by User" state
@@ -548,10 +556,10 @@ namespace EasySave.ViewModels
             }
         }
 
-        private async Task StartAllBackupsInParallelAsync()
+        private async Task StartAllBackupsInParallelAsync() // Parallel execution: all jobs start around the same time
         {
             if (_backupManagerService == null) { HandleUninitializedService("StartAllBackupsOperation"); return; }
-            if (!AreGlobalControlsEnabled) return;
+            if (!AreGlobalControlsEnabled) return; // Don't start if already busy
 
             GlobalStatusMessage = LanguageManager.GetString("StartingAllJobs");
             foreach (var jobVm in BackupJobs) { jobVm.ResetState(); } // Reset before starting
@@ -568,17 +576,17 @@ namespace EasySave.ViewModels
                 }
             }
 
-            if (businessSoftwareRunning)
+            if (businessSoftwareRunning) // If any job is blocked by business software
             {
                 // Ask ONCE if user wants to proceed with non-blocked jobs, or cancel all.
                 var userChoice = MessageBox.Show(
                     $"{LanguageManager.GetString("BusinessSoftwareDetectedForSome")}\n\n{LanguageManager.GetString("ContinueWithNonBlockedJobs")}",
                     LanguageManager.GetString("BusinessSoftwareDetected"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
 
-                if (userChoice == MessageBoxResult.No)
+                if (userChoice == MessageBoxResult.No) // User chose not to proceed
                 {
                     GlobalStatusMessage = LanguageManager.GetString("AllJobsExecutionCancelled");
-                    UpdateOverallExecutionState();
+                    UpdateOverallExecutionState(); // Update state, no jobs will run
                     return; // User cancelled all parallel execution
                 }
                 // If Yes, proceed to run only jobs not marked as Interrupted.
@@ -588,15 +596,15 @@ namespace EasySave.ViewModels
             try
             {
                 // Filter out jobs that were marked as Interrupted by the BS check
-                var jobsToRun = BackupJobs.Where(vm => vm.JobModel.Name != null &&
-                                              _backupManagerService.GetAllJobs().Any(j => j.Name == vm.JobModel.Name) &&
+                var jobsToRun = BackupJobs.Where(vm => vm.JobModel.Name != null && // Ensure job has a name
+                                              _backupManagerService.GetAllJobs().Any(j => j.Name == vm.JobModel.Name) && // Ensure job is known to service
                                               vm.StatusMessage != LanguageManager.GetString("StatusInterrupted")) // Check StatusMessage for Interrupted state
                                      .Select(vm => vm.JobModel)
                                      .ToList();
 
-                _backupManagerService.StartAllJobsInParallel(jobsToRun); // Modified to take a list
-                await _backupManagerService.WaitForAllJobsAsync(); // Wait for all these started tasks
-                _backupManagerService.ClearFinishedJobs(); // Clean up tracking
+                _backupManagerService.StartAllJobsInParallel(jobsToRun); // Modified to take a list of jobs to run
+                await _backupManagerService.WaitForAllJobsAsync(); // Wait for all these started tasks to complete
+                _backupManagerService.ClearFinishedJobs(); // Clean up tracking of finished jobs in the manager
 
                 // Final status determination after all parallel jobs are done
                 bool anyJobHadIssues = BackupJobs.Any(vm =>
@@ -607,8 +615,9 @@ namespace EasySave.ViewModels
                 {
                     GlobalStatusMessage = LanguageManager.GetString("AllJobsCompletedWithIssues");
                 }
+                // Check if all jobs that were meant to run are completed, or if some were not run (e.g. filtered out by BS check and stayed "Ready")
                 else if (BackupJobs.All(vm => vm.StatusMessage == LanguageManager.GetString("StatusCompleted") ||
-                                             (!vm.IsExecuting && vm.StatusMessage == LanguageManager.GetString("StatusReady")))) // If some were not run (e.g. filtered out)
+                                             (!vm.IsExecuting && vm.StatusMessage == LanguageManager.GetString("StatusReady"))))
                 {
                     GlobalStatusMessage = LanguageManager.GetString("AllJobsCompletedSuccessfully");
                 }
@@ -631,7 +640,7 @@ namespace EasySave.ViewModels
         }
         private void OnApplicationExit(object sender, ExitEventArgs e)
         {
-            _socketService?.Stop();
+            _socketService?.Stop(); // Clean up socket service when application closes
         }
 
 
@@ -639,6 +648,7 @@ namespace EasySave.ViewModels
         {
             if (_backupManagerService == null)
             {
+                // Log this, as it's an issue if we try to save without the service
                 System.Diagnostics.Debug.WriteLine("SaveJobsConfigurationAsync: _backupManagerService is null. Configuration not saved.");
                 return;
             }

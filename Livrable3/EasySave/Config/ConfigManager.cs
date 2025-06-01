@@ -4,31 +4,38 @@ using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
 using EasySave.Models; // For BackupJob
-using EasySave.Utils;   // For LanguageManager (for error messages)
+using EasySave.Utils; // For LanguageManager
 
 namespace EasySave.Config
 {
+    // Manages configuration and settings for the application.
     public static class ConfigManager
     {
+        // Paths for application data directory and config files.
         private static readonly string AppDataDir;
         private static readonly string JobsConfigFilePath;
         private static readonly string AppSettingsFilePath;
 
+        // Static constructor to initialize paths.
         static ConfigManager()
         {
+            // Set the application data directory path.
             AppDataDir = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                 "EasySave");
 
+            // Create the directory if it doesn't exist.
             if (!Directory.Exists(AppDataDir))
             {
                 Directory.CreateDirectory(AppDataDir);
             }
 
+            // Set paths for configuration files.
             JobsConfigFilePath = Path.Combine(AppDataDir, "backup_jobs.json");
             AppSettingsFilePath = Path.Combine(AppDataDir, "app_settings.json");
         }
 
+        // Load backup jobs from the configuration file.
         public static async Task<List<BackupJob>> LoadJobsAsync()
         {
             if (File.Exists(JobsConfigFilePath))
@@ -41,7 +48,6 @@ namespace EasySave.Config
                 }
                 catch (Exception ex)
                 {
-                    // In a real app, use a proper logging mechanism or ViewModel feedback
                     Console.WriteLine($"Error loading backup jobs configuration: {ex.Message}");
                     return new List<BackupJob>();
                 }
@@ -49,6 +55,7 @@ namespace EasySave.Config
             return new List<BackupJob>();
         }
 
+        // Save backup jobs to the configuration file.
         public static async Task SaveJobsAsync(List<BackupJob> jobs)
         {
             try
@@ -63,6 +70,7 @@ namespace EasySave.Config
             }
         }
 
+        // Load application settings from the configuration file.
         public static async Task<AppSettingsData> LoadAppSettingsAsync()
         {
             if (File.Exists(AppSettingsFilePath))
@@ -82,6 +90,7 @@ namespace EasySave.Config
             return new AppSettingsData();
         }
 
+        // Save application settings to the configuration file.
         public static async Task SaveAppSettingsAsync(AppSettingsData settings)
         {
             try

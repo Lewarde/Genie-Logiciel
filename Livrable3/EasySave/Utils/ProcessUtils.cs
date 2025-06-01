@@ -2,7 +2,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.ComponentModel; // Pour Win32Exception
+using System.ComponentModel; // For Win32Exception
 
 namespace EasySave.Utils
 {
@@ -18,7 +18,7 @@ namespace EasySave.Utils
             string normalizedPathToFind;
             try
             {
-                normalizedPathToFind = Path.GetFullPath(fullExecutablePath);
+                normalizedPathToFind = Path.GetFullPath(fullExecutablePath); // Normalize the input path
             }
             catch (Exception ex)
             {
@@ -30,16 +30,18 @@ namespace EasySave.Utils
             bool found = false;
             try
             {
-                processes = Process.GetProcesses();
+                processes = Process.GetProcesses(); // Get all running processes
                 foreach (Process process in processes)
                 {
                     try
                     {
-                        if (process.Id == 0 || process.Id == 4) continue; // Skip Idle and System process early
+                        if (process.Id == 0 || process.Id == 4) continue; // Skip Idle and System process
 
+                        // Check if process has a valid MainModule and file path
                         if (process.MainModule != null && !string.IsNullOrEmpty(process.MainModule.FileName))
                         {
-                            string runningProcessPath = Path.GetFullPath(process.MainModule.FileName);
+                            string runningProcessPath = Path.GetFullPath(process.MainModule.FileName); // Normalize process path
+                            // Compare paths ignoring case
                             if (string.Equals(runningProcessPath, normalizedPathToFind, StringComparison.OrdinalIgnoreCase))
                             {
                                 found = true;
@@ -49,18 +51,22 @@ namespace EasySave.Utils
                     }
                     catch (Win32Exception ex)
                     {
-                        // Debug.WriteLine($"[ProcessUtils] Win32Exception for {process.ProcessName} (ID: {process.Id}): {ex.Message}");
+                        // Happens when access is denied to process information
+                        Debug.WriteLine($"[ProcessUtils] Win32Exception for {process.ProcessName} (ID: {process.Id}): {ex.Message}");
                     }
                     catch (InvalidOperationException ex)
                     {
-                        // Debug.WriteLine($"[ProcessUtils] InvalidOperationException for {process.ProcessName} (ID: {process.Id}): {ex.Message}");
+                        // Happens when the process has exited
+                        Debug.WriteLine($"[ProcessUtils] InvalidOperationException for {process.ProcessName} (ID: {process.Id}): {ex.Message}");
                     }
-                    catch (NotSupportedException ex) // Can happen for some processes like Secure System
+                    catch (NotSupportedException ex)
                     {
-                        // Debug.WriteLine($"[ProcessUtils] NotSupportedException for {process.ProcessName} (ID: {process.Id}): {ex.Message}");
+                        // Happens when MainModule is not supported
+                        Debug.WriteLine($"[ProcessUtils] NotSupportedException for {process.ProcessName} (ID: {process.Id}): {ex.Message}");
                     }
                     catch (Exception ex)
                     {
+                        // Catch any other unexpected error
                         Debug.WriteLine($"[ProcessUtils] Generic exception for {process.ProcessName} (ID: {process.Id}): {ex.Message}");
                     }
                 }
@@ -74,6 +80,7 @@ namespace EasySave.Utils
             {
                 if (processes != null)
                 {
+                    // Always dispose processes to free system resources
                     foreach (Process process in processes)
                     {
                         process.Dispose();

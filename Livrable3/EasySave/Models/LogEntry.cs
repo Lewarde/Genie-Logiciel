@@ -10,7 +10,7 @@ namespace EasySave.Models
         public string TargetFile { get; set; }
         public long FileSize { get; set; }
         public long TransferTimeMs { get; set; }
-        public long EncryptionTimeMs { get; set; } // Nouveau champ pour le temps de chiffrement
+        public long EncryptionTimeMs { get; set; } 
         public string Message { get; set; } // For general messages, like interruptions or non-file specific logs
 
         public LogEntry()
@@ -19,7 +19,7 @@ namespace EasySave.Models
             JobName = string.Empty;
             SourceFile = string.Empty;
             TargetFile = string.Empty;
-            Message = string.Empty; // Initialize to empty
+            Message = string.Empty; 
             EncryptionTimeMs = 0;
         }
     }

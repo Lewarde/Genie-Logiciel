@@ -1,42 +1,50 @@
 ﻿using System;
 using System.Diagnostics;
-using System.IO; // Ajout pour Path
+using System.IO; // Required for Path operations
 
 namespace EasySave.Services.CryptoSoft
 {
+    // Service for encrypting files using an external tool.
     public class EncryptionService
     {
-        // Le chemin vers CryptoSoft.exe doit être configurable ou relatif
-        private readonly string _encryptionToolPath = @"C:\Users\hp\Desktop\genie logiciel\EasySave_3emeVersion\Livrable3\CryptoSoft\bin\Debug\net9.0-windows\CryptoSoft.exe"; // Utilisez @ pour les chemins
-e
+        // Path to the encryption tool executable.
+        private readonly string _encryptionToolPath = @"C:\Users\Adam\source\repos\Genie-Logiciel\Livrable3\CryptoSoft\bin\Debug\net9.0-windows\CryptoSoft.exe";
+
+        // Encrypts a file using the external encryption tool.
         public long EncryptFile(string sourceFilePath, string targetDirectoryPath)
         {
+            // Check if the encryption tool exists.
             if (!File.Exists(_encryptionToolPath))
             {
-                Console.WriteLine($"Erreur : L'outil de chiffrement CryptoSoft.exe n'a pas été trouvé à l'emplacement : {_encryptionToolPath}");
-                return -10;
+                Console.WriteLine($"Error: The encryption tool CryptoSoft.exe was not found at: {_encryptionToolPath}");
+                return -10; // Error code for missing tool
             }
+
+            // Check if the source file exists.
             if (!File.Exists(sourceFilePath))
             {
-                Console.WriteLine($"Erreur : Le fichier source à chiffrer n'existe pas : {sourceFilePath}");
-                return -11;
+                Console.WriteLine($"Error: The source file to encrypt does not exist: {sourceFilePath}");
+                return -11; // Error code for missing source file
             }
+
+            // Check if the target directory exists.
             if (!Directory.Exists(targetDirectoryPath))
             {
-                Console.WriteLine($"Erreur : Le répertoire cible pour le chiffrement n'existe pas : {targetDirectoryPath}");
-                return -12; // Code d'erreur spécifique : répertoire cible non trouvé
+                Console.WriteLine($"Error: The target directory for encryption does not exist: {targetDirectoryPath}");
+                return -12; // Error code for missing target directory
             }
 
-
-            // Le nom du fichier chiffré sera sourceFileName.extension.crypt
+            // Define the encrypted file name and path.
             string encryptedFileName = Path.GetFileName(sourceFilePath) + ".crypt";
             string encryptedTargetFilePath = Path.Combine(targetDirectoryPath, encryptedFileName);
 
+            // Prepare arguments for the encryption tool.
             string arguments = $"\"{sourceFilePath}\" \"{encryptedTargetFilePath}\"";
             var stopwatch = new Stopwatch();
 
             try
             {
+                // Configure the process start info for the encryption tool.
                 ProcessStartInfo startInfo = new ProcessStartInfo
                 {
                     FileName = _encryptionToolPath,
@@ -51,39 +59,34 @@ e
                 {
                     process.StartInfo = startInfo;
 
+                    // Start the encryption process and measure the time taken.
                     stopwatch.Start();
                     process.Start();
 
-                    // Lire les sorties pour éviter le blocage du buffer
+                    // Read output and error streams.
                     string output = process.StandardOutput.ReadToEnd();
                     string error = process.StandardError.ReadToEnd();
 
-                    process.WaitForExit(); // Attendre la fin du processus
+                    process.WaitForExit(); // Wait for the process to finish.
                     stopwatch.Stop();
 
-                    // Vous pouvez logger output et error ici si vous le souhaitez,
-                    // mais ne pas utiliser Console.WriteLine directement dans une lib/service.
-                    // Exemple: _logger.LogInfo("CryptoSoft Output: " + output);
-                    // Exemple: _logger.LogError("CryptoSoft Error: " + error);
-
+                    // Return the elapsed time if successful, otherwise return an error code.
                     if (process.ExitCode == 0)
                     {
-                        return stopwatch.ElapsedMilliseconds; // Succès
+                        return stopwatch.ElapsedMilliseconds; // Success
                     }
                     else
                     {
-                        // Retourner un code d'erreur négatif basé sur ExitCode
-                        // ou un code d'erreur générique.
-                        Console.WriteLine($"Erreur de CryptoSoft (ExitCode {process.ExitCode}): {error}");
-                        return process.ExitCode != 0 ? -process.ExitCode : -1; // Évite de retourner 0 si ExitCode est 0 mais qu'il y a eu une autre erreur
+                        Console.WriteLine($"CryptoSoft Error (ExitCode {process.ExitCode}): {error}");
+                        return process.ExitCode != 0 ? -process.ExitCode : -1;
                     }
                 }
             }
             catch (Exception ex)
             {
-                // Logger l'exception
-                Console.WriteLine($"Exception lors du chiffrement de {sourceFilePath}: {ex.Message}");
-                return -99; // Code d'erreur générique pour exception
+                // Log the exception.
+                Console.WriteLine($"Exception during encryption of {sourceFilePath}: {ex.Message}");
+                return -99; // Generic error code for exceptions
             }
         }
     }

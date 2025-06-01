@@ -8,13 +8,14 @@ using EasySave.Models;
 using EasySave.Services;
 using EasySave.Utils;
 using Logger;
-using EasySave.BackupExecutor; // Correct namespace for BackupExecutor
+using EasySave.BackupExecutor;
 using EasySave.Services.CryptoSoft;
 using EasySave.Config;
 
-namespace EasySave.BackupManager // Corrected namespace
+namespace EasySave.BackupManager
 {
-    public class BackupManager : EasySave.Services.IBackupManager // Implements an interface, likely from a different namespace
+    // Manages backup jobs, including execution, pausing, resuming, and stopping.
+    public class BackupManager : EasySave.Services.IBackupManager
     {
         private readonly List<BackupJob> _backupJobs;
         private readonly StateManager _stateManager;
@@ -23,35 +24,37 @@ namespace EasySave.BackupManager // Corrected namespace
         private readonly EncryptionService _encryptionService;
         private readonly AppSettingsData _appSettings;
 
-        // Keep track of running jobs to manage them (e.g., for parallel execution, stopping all, etc.)
+        // Tracks running jobs for management purposes.
         private readonly ConcurrentDictionary<string, Task> _runningJobTasks;
 
-
+        // Constructor initializes services and settings.
         public BackupManager(AppSettingsData appSettings)
         {
             _appSettings = appSettings ?? throw new ArgumentNullException(nameof(appSettings));
             _backupJobs = new List<BackupJob>();
             _stateManager = new StateManager();
 
-            if (LogManager.Instance == null) // Ensure LogManager is initialized
+            if (LogManager.Instance == null)
                 throw new InvalidOperationException("LogManager not initialized. Call LogManager.Initialize() first.");
             _logManager = LogManager.Instance;
 
-            _encryptionService = new EncryptionService(); // Assuming this is correctly initialized
+            _encryptionService = new EncryptionService();
 
-            // The BackupExecutor service that handles the actual backup logic
+            // Initialize BackupExecutor service.
             _backupExecutorService = new EasySave.BackupExecutor.BackupExecutor(
                 _logManager,
                 _stateManager,
                 _encryptionService,
-                _appSettings.BusinessSoftwareProcessName // Pass the business software path
+                _appSettings.BusinessSoftwareProcessName
             );
 
             _runningJobTasks = new ConcurrentDictionary<string, Task>();
         }
 
+        // Returns all backup jobs.
         public List<BackupJob> GetAllJobs() => _backupJobs;
 
+        // Adds a new backup job if it doesn't already exist.
         public void AddBackupJob(BackupJob job)
         {
             if (!_backupJobs.Any(bj => bj.Name.Equals(job.Name, StringComparison.OrdinalIgnoreCase)))
@@ -60,48 +63,52 @@ namespace EasySave.BackupManager // Corrected namespace
             }
         }
 
-        public void RemoveBackupJob(int index) // Typically by ID or unique name is safer than index if list reorders
+        // Removes a backup job by index.
+        public void RemoveBackupJob(int index)
         {
             if (index >= 0 && index < _backupJobs.Count)
                 _backupJobs.RemoveAt(index);
         }
 
-        public void RemoveBackupJob(BackupJob job) // Remove by object reference or a unique identifier
+        // Removes a backup job by job object.
+        public void RemoveBackupJob(BackupJob job)
         {
             var jobToRemove = _backupJobs.FirstOrDefault(bj => bj.Name.Equals(job.Name, StringComparison.OrdinalIgnoreCase));
             if (jobToRemove != null)
                 _backupJobs.Remove(jobToRemove);
         }
 
+        // Executes a backup job asynchronously.
         public async Task ExecuteBackupJobAsync(BackupJob job)
         {
-            // Wrap the execution in a task and store it if needed for parallel management
-            // For single execution, direct await is fine.
             try
             {
+                // Check if source directory exists.
                 if (!Directory.Exists(job.SourceDirectory))
                     throw new DirectoryNotFoundException($"{LanguageManager.GetString("SourceDirNotFound")}: {job.SourceDirectory}");
 
+                // Create target directory if it doesn't exist.
                 if (!Directory.Exists(job.TargetDirectory))
                     Directory.CreateDirectory(job.TargetDirectory);
 
+                // Execute the backup job.
                 await _backupExecutorService.ExecuteBackupJobAsync(job);
             }
             catch (BusinessSoftwareInterruptionException)
             {
-                // Logged and state updated by BackupExecutor, rethrow for MainViewModel to handle UI
+                // Exception is logged and state updated by BackupExecutor.
                 throw;
             }
             catch (Exception ex)
             {
-                // Generic error handling, ensure state is updated
+                // Handle generic errors.
                 var errorProgress = new BackupProgress
                 {
                     JobName = job.Name,
                     State = BackupState.Error,
                     Timestamp = DateTime.Now
                 };
-                await _stateManager.UpdateStateAsync(errorProgress); // Ensure state reflects error
+                await _stateManager.UpdateStateAsync(errorProgress);
 
                 await _logManager.LogFileOperationAsync(new LogEntry
                 {
@@ -109,26 +116,29 @@ namespace EasySave.BackupManager // Corrected namespace
                     JobName = job.Name,
                     Message = $"Backup job '{job.Name}' failed at BackupManager level: {ex.Message}"
                 });
-                throw; // Rethrow for MainViewModel to handle UI
+                throw;
             }
         }
 
+        // Pauses a running backup job.
         public async Task PauseJobAsync(string jobName)
         {
             await _backupExecutorService.PauseJobAsync(jobName);
         }
 
+        // Resumes a paused backup job.
         public async Task ResumeJobAsync(string jobName)
         {
             await _backupExecutorService.ResumeJobAsync(jobName);
         }
 
+        // Stops a running backup job.
         public async Task StopJobAsync(string jobName)
         {
             await _backupExecutorService.StopJobAsync(jobName);
         }
 
-
+        // Starts all specified backup jobs in parallel.
         public void StartAllJobsInParallel(List<BackupJob> jobsToRun)
         {
             if (jobsToRun == null) return;
@@ -137,52 +147,50 @@ namespace EasySave.BackupManager // Corrected namespace
             {
                 if (job == null || string.IsNullOrEmpty(job.Name)) continue;
 
-                // Check if the job is already running and not completed.
-                // The IsJobRunning check might be more robust if it considers tasks not yet completed.
+                // Skip if job is already running or queued.
                 if (_runningJobTasks.TryGetValue(job.Name, out var existingTask) && !existingTask.IsCompleted)
                 {
                     System.Diagnostics.Debug.WriteLine($"[BackupManager] Job '{job.Name}' is already running or queued. Skipping.");
                     continue;
                 }
 
-                // Task.Run to execute the job asynchronously
+                // Queue job for parallel execution.
                 var task = Task.Run(async () => await ExecuteBackupJobAsync(job));
-                _runningJobTasks.AddOrUpdate(job.Name, task, (key, oldTask) =>
-                {
-                    // If there was an old task, this replacement logic might need to be more careful
-                    // e.g., ensure oldTask is completed or cancelled. For simplicity here, just replace.
-                    return task;
-                });
+                _runningJobTasks.AddOrUpdate(job.Name, task, (key, oldTask) => task);
                 System.Diagnostics.Debug.WriteLine($"[BackupManager] Queued job '{job.Name}' for parallel execution.");
             }
         }
 
+        // Waits for all running jobs to complete.
         public async Task WaitForAllJobsAsync()
         {
-            // Wait for all tasks currently in _runningJobTasks to complete
-            // This might need refinement if jobs are added/removed dynamically while waiting
-            await Task.WhenAll(_runningJobTasks.Values.ToList()); // ToList to make a snapshot
+            await Task.WhenAll(_runningJobTasks.Values.ToList());
         }
 
-        public bool IsJobRunning(string jobName) // Check if a specific job's task is active
+        // Checks if a job is currently running.
+        public bool IsJobRunning(string jobName)
         {
             return _runningJobTasks.TryGetValue(jobName, out var task) && !task.IsCompleted;
         }
 
-        public void ClearFinishedJobs() // Clean up completed/faulted tasks from the tracking dictionary
+        // Clears finished jobs from the running jobs dictionary.
+        public void ClearFinishedJobs()
         {
-            foreach (var kvp in _runningJobTasks.ToList()) // ToList to iterate over a snapshot
+            foreach (var kvp in _runningJobTasks.ToList())
             {
-                if (kvp.Value.IsCompleted) // IsCompleted is true for RanToCompletion, Faulted, or Canceled
+                if (kvp.Value.IsCompleted)
                 {
                     _runningJobTasks.TryRemove(kvp.Key, out _);
                 }
             }
         }
 
-        public EasySave.BackupExecutor.BackupExecutor GetBackupExecutor() // Expose executor for progress updates
+        // Returns the BackupExecutor instance.
+        public EasySave.BackupExecutor.BackupExecutor GetBackupExecutor()
         {
             return _backupExecutorService;
         }
     }
 }
+
+
